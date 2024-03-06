@@ -1,15 +1,18 @@
 from coppeliasim_zmqremoteapi_client import RemoteAPIClient
 import matplotlib.pyplot as plt
 import array
+from time import sleep
 import numpy as np
 
 client = RemoteAPIClient()
 sim = client.getObject("sim")
 handle = sim.getObject("/Vision_sensor")
+sim.startSimulation()
+sleep(2)
 
 # Ottieni l'immagine e la risoluzione
 image, resolution = sim.getVisionSensorImg(handle)
-
+sim.stopSimulation()
 # Verifica la disponibilità dell'immagine
 if image is not None and resolution is not None:
     # L'immagine è disponibile
