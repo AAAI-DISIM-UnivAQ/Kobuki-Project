@@ -29,7 +29,7 @@ if image is not None and resolution is not None:
     img_np = img_np.reshape((resolution[1], resolution[0], 3))
 
     # Mostra l'immagine utilizzando matplotlib
-    plt.imshow(img_np)
+    plt.imshow(img_np, origin="lower")
     plt.show()
 
     # Puoi eseguire ulteriori operazioni qui
