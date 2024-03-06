@@ -2,12 +2,8 @@ from coppeliasim_zmqremoteapi_client import RemoteAPIClient
 
 client = RemoteAPIClient()
 sim = client.getObject("sim")
-sim.startSimulation()
-handle = sim.getObjectHandle("visionSensor")
-image, resolution, status = sim.getVisionSensorImage(handle)
+handle = sim.getObject("/Vision_sensor")
 
-if status == 0:
-    print("Failed to retrieve vision sensor image.")
-else:
-    print("Image resolution:", resolution)
-    print("Image data:", image)
+image, resolution = sim.getVisionSensorImg(handle)
+
+print(image, resolution)
