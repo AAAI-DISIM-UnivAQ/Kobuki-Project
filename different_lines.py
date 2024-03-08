@@ -5,7 +5,7 @@ import numpy as np
 import cv2
 from time import sleep
 
-def find_horizontal_and_vertical_lines(image, min_line_length=5, max_line_gap=10):
+def find_horizontal_and_vertical_lines(image, resolution, min_line_length=5, max_line_gap=10):
     # Estrai i canali di colore dall'immagine
     blue_channel, green_channel, red_channel = cv2.split(image)
 
@@ -22,6 +22,7 @@ def find_horizontal_and_vertical_lines(image, min_line_length=5, max_line_gap=10
     # Separazione delle linee orizzontali e verticali
     horizontal_lines = []
     vertical_lines = []
+    horizontal_line_distances = []  # Inizializza la lista delle distanze
 
     if lines is not None:
         for line in lines:
@@ -32,6 +33,10 @@ def find_horizontal_and_vertical_lines(image, min_line_length=5, max_line_gap=10
             # Verifica se la linea è orizzontale o verticale
             if abs(slope) < 1:
                 horizontal_lines.append(line)
+                # Calcola la distanza della linea orizzontale dal punto medio dell'immagine
+                mid_point = (x1 + x2) // 2
+                distance_from_center = mid_point - (resolution[0] // 2)
+                horizontal_line_distances.append(distance_from_center)
             else:
                 vertical_lines.append(line)
 
@@ -49,7 +54,25 @@ def find_horizontal_and_vertical_lines(image, min_line_length=5, max_line_gap=10
         x1, y1, x2, y2 = line[0]
         cv2.line(output_vertical, (x1, y1), (x2, y2), (0, 0, 255), 2)
 
-    return output_horizontal, output_vertical, num_horizontal_lines, num_vertical_lines
+        # Lista per memorizzare le distanze delle linee orizzontali
+        horizontal_line_distances = []
+
+        if lines is not None:
+            for line in lines:
+                x1, y1, x2, y2 = line[0]
+                # Calcola la pendenza della linea
+                slope = (y2 - y1) / (x2 - x1) if (x2 - x1) != 0 else float('inf')
+
+                # Verifica se la linea è orizzontale
+                if abs(slope) < 1:
+                    horizontal_lines.append(line)
+
+                    # Calcola la distanza della linea orizzontale dal punto medio dell'immagine
+                    mid_point = (x1 + x2) // 2
+                    distance_from_center = mid_point - (resolution[0] // 2)
+                    horizontal_line_distances.append(distance_from_center)
+
+    return output_horizontal, output_vertical, num_horizontal_lines, num_vertical_lines, horizontal_line_distances
 
 
 def capture_and_display_video(sim, handle, robot_handle, stop_distance):
@@ -57,6 +80,10 @@ def capture_and_display_video(sim, handle, robot_handle, stop_distance):
     sim.startSimulation()
 
     try:
+
+        # Crea una nuova figura con 3 nuovi subplot fuori dal ciclo while
+        #fig, axs = plt.subplots(1, 3, figsize=(15, 5))
+
         while True:
             # Ottieni l'immagine e la risoluzione
             image, resolution = sim.getVisionSensorImg(handle)
@@ -73,7 +100,8 @@ def capture_and_display_video(sim, handle, robot_handle, stop_distance):
                 img_np = img_np.reshape((resolution[1], resolution[0], 3))
 
                 # Trova linee orizzontali e verticali nell'immagine binaria
-                output_horizontal, output_vertical, num_horizontal_lines, num_vertical_lines = find_horizontal_and_vertical_lines(img_np)
+                output_horizontal, output_vertical, num_horizontal_lines, num_vertical_lines, horizontal_line_distances = find_horizontal_and_vertical_lines(
+                    img_np, resolution)
 
                 # Crea una nuova figura con 3 nuovi subplot ad ogni iterazione
                 fig, axs = plt.subplots(1, 3, figsize=(15, 5))
@@ -99,6 +127,50 @@ def capture_and_display_video(sim, handle, robot_handle, stop_distance):
                 # if green_stripe_distance > 0 and green_stripe_distance < stop_distance:
                 #     print(f"Simulazione interrotta. Distanza dalla riga verde: {green_stripe_distance}")
                 #     break
+
+                # Trova linee orizzontali e verticali nell'immagine binaria
+                #output_horizontal, output_vertical, num_horizontal_lines, num_vertical_lines, horizontal_line_distances = find_horizontal_and_vertical_lines(
+                    #img_np, resolution)
+
+                # Crea una nuova figura con 3 nuovi subplot ad ogni iterazione
+                #fig, axs = plt.subplots(1, 3, figsize=(15, 5))
+
+                # Visualizza l'immagine originale e i plot delle linee orizzontali e verticali
+                #axs[0].imshow(img_np, origin="lower")
+                #axs[0].set_title('Immagine Originale')
+                #axs[1].imshow(output_horizontal, cmap='gray', origin="lower")
+                #axs[1].set_title(f'Linee Orizzontali ({num_horizontal_lines})')
+
+                # Stampa le distanze delle linee orizzontali
+                #for i, distance in enumerate(horizontal_line_distances):
+                    #axs[1].text(5, 15 + i * 15, f'Distanza linea {i + 1}: {distance}', color='red')
+
+                #axs[2].imshow(output_vertical, cmap='gray', origin="lower")
+                #axs[2].set_title(f'Linee Verticali ({num_vertical_lines})')
+
+
+
+
+
+                # Visualizza l'immagine originale e i plot delle linee orizzontali e verticali
+                #axs[0].imshow(img_np, origin="lower")
+                #axs[0].set_title('Immagine Originale')
+                #axs[1].imshow(output_horizontal, cmap='gray', origin="lower")
+                #axs[1].set_title(f'Linee Orizzontali ({num_horizontal_lines})')
+
+                # Stampa le distanze delle linee orizzontali nel log
+                print("---------------------")
+                for i, distance in enumerate(horizontal_line_distances):
+                    print(f'Distanza linea {i + 1}: {distance}')
+
+                #axs[2].imshow(output_vertical, cmap='gray', origin="lower")
+                #axs[2].set_title(f'Linee Verticali ({num_vertical_lines})')
+
+                # Aggiungi una pausa più lunga per evitare troppe richieste consecutive
+                #sleep(0.5)
+
+                #plt.pause(0.1)  # Aggiungi una piccola pausa per visualizzare l'immagine
+                #plt.cla()  # Cancella gli assi della figura corrente
 
             else:
                 # L'immagine non è disponibile
