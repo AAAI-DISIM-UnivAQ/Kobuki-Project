@@ -5,6 +5,16 @@ import numpy as np
 import cv2
 from time import sleep
 
+def count_white_lines(image, min_contour_length=0):
+    # Trova i contorni nell'immagine binaria
+    contours, _ = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Filtra i contorni in base alla lunghezza
+    filtered_contours = [cnt for cnt in contours if cv2.arcLength(cnt, True) > min_contour_length]
+
+    # Restituisci il numero di contorni trovati
+    return len(filtered_contours)
+
 def get_green_stripe_distance(image, plot_binary_image=True):
     # Estrai i canali di colore dall'immagine
     blue_channel, green_channel, red_channel = cv2.split(image)
@@ -31,6 +41,10 @@ def get_green_stripe_distance(image, plot_binary_image=True):
         plt.imshow(green_mask, cmap='gray', origin='lower')
         plt.title('Maschera verde')
         plt.show()
+
+    # Conta le linee bianche nell'immagine binaria
+    white_line_count = count_white_lines(green_mask)
+    print("Numero di linee bianche nell'immagine:", white_line_count)
 
     return average_distance
 
@@ -68,7 +82,7 @@ def capture_and_display_video(sim, handle, robot_handle, stop_distance):
 
                 # Calcola la distanza media dalla riga verde
                 green_stripe_distance = get_green_stripe_distance(img_np)
-                print("Distance from green stripe: ", green_stripe_distance)
+                #print("Distance from green stripe: ", green_stripe_distance)
 
                 # Controlla se la distanza è inferiore alla distanza di arresto desiderata
                 if green_stripe_distance > 0 and green_stripe_distance < stop_distance:
