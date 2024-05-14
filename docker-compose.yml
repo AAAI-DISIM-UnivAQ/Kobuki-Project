@@ -3,7 +3,9 @@ version: '3'
 services:
 
   sense_module:
-    image: app/sense_image
+    build:
+      context: ./sense
+      dockerfile: Dockerfile
     container_name: sense_module
     hostname: sense_module
     ports:
@@ -14,7 +16,9 @@ services:
       - TZ=Europe/Rome
 
   action_module:
-    image: app/action_image
+    build:
+      context: ./action
+      dockerfile: Dockerfile
     container_name: action_module
     hostname: action_module
     ports:
@@ -25,7 +29,9 @@ services:
       - TZ=Europe/Rome
 
   perc_module:
-    image: app/perception_image
+    build:
+      context: ./perception
+      dockerfile: Dockerfile
     container_name: perc_module
     hostname: perc_module
     ports:
@@ -38,7 +44,9 @@ services:
       - sense_module
 
   controller:
-    image: app/controller_image
+    build:
+      context: ./controller
+      dockerfile: Dockerfile
     container_name: controller
     hostname: controller
     ports:
