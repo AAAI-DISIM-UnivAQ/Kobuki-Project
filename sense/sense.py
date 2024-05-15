@@ -28,9 +28,8 @@ class Body:
 if __name__ == "__main__":
     my_robot = Body(["Vision_sensor"])
 
-    client_pub = mqtt.Client(
-        mqtt.CallbackAPIVersion.VERSION2, reconnect_on_failure=True)
-    client_pub.connect("sense", 1883)
+    client_pub = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, reconnect_on_failure=True)
+    client_pub.connect("mosquitto", 1883)
 
     while True:
         my_robot.sense(client_pub)
