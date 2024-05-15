@@ -23,15 +23,16 @@ class Body:
             self._d_sensors[s] = vision_values[0]
         for name in self._sensor_array:
             client.publish(f"sense/{name}", str(self._d_sensors[name]))
-            # print(f"Published ",str(self._d_sensors[name]))
-            print("Published")
+            # print(f"Published:", str(self._d_sensors[name]))
+            # print("Published")
 
 
 if __name__ == "__main__":
     my_robot = Body(["Vision_sensor"])
 
-    client_mqtt = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, reconnect_on_failure=True)
-    client_mqtt.connect("mosquitto", 1883)
+    client_pub = mqtt.Client(
+        mqtt.CallbackAPIVersion.VERSION2, reconnect_on_failure=True)
+    client_pub.connect("sense", 1883)
 
     while True:
-        my_robot.sense(client_mqtt)
+        my_robot.sense(client_pub)
