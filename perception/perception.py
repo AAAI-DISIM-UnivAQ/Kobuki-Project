@@ -38,5 +38,5 @@ if __name__ == "__main__":
         mqtt.CallbackAPIVersion.VERSION2, reconnect_on_failure=True)
     client_sub.on_connect = on_connect
     client_sub.on_message = on_message
-    client_sub.connect("sense", 1883, 60)
+    client_sub.connect("sense", 1883)
     client_sub.loop_forever()

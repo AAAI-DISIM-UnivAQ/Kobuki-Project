@@ -17,14 +17,12 @@ class Body:
         self._sim_body.start()
 
     def sense(self, client):
-        # global my_robot
         vision_values = self._sim_body.sense()
         for s in self._d_sensors:
             self._d_sensors[s] = vision_values[0]
         for name in self._sensor_array:
             client.publish(f"sense/{name}", str(self._d_sensors[name]))
-            # print(f"Published:", str(self._d_sensors[name]))
-            # print("Published")
+            print(f"Published:", str(self._d_sensors[name]))
 
 
 if __name__ == "__main__":
