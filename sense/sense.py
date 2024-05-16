@@ -22,7 +22,7 @@ class Body:
             self._d_sensors[s] = vision_values[0]
         for name in self._sensor_array:
             client.publish(f"sense/{name}", str(self._d_sensors[name]))
-            print(f"Published:", str(self._d_sensors[name]))
+            print(f"Published data from sensor: {name}")
 
 
 if __name__ == "__main__":
