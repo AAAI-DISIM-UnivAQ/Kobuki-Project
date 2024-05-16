@@ -7,7 +7,8 @@ MY_SIM_HOST = "host.docker.internal"
 class SimulatedPioneerBody:
     _sim: Any
     _cSim_client: Any
-    _my_sensors_values: List
+    _my_actuators: dict
+    _my_actuators_names: List
 
     def __init__(self, name: str):
         self._my_name = name
@@ -16,59 +17,18 @@ class SimulatedPioneerBody:
         self._cSim_client = RemoteAPIClient(host=MY_SIM_HOST)
         self._sim = self._cSim_client.require('sim')
         print("Connected to SIM")
-        self._my_sensors_values = []
-        front_sensors = [
-                   self._sim.getObject("./ultrasonicSensor[0]"),
-                   self._sim.getObject("./ultrasonicSensor[1]"),
-                   self._sim.getObject("./ultrasonicSensor[2]"),
-                   self._sim.getObject("./ultrasonicSensor[3]"),
-                   self._sim.getObject("./ultrasonicSensor[4]"),
-                   self._sim.getObject("./ultrasonicSensor[5]"),
-                   self._sim.getObject("./ultrasonicSensor[6]"),
-                   self._sim.getObject("./ultrasonicSensor[7]")
-        ]
-        self._my_sensors_values.append(front_sensors)
-        back_sensors = [
-                self._sim.getObject("./ultrasonicSensor[8]"),
-                self._sim.getObject("./ultrasonicSensor[9]"),
-                self._sim.getObject("./ultrasonicSensor[10]"),
-                self._sim.getObject("./ultrasonicSensor[11]"),
-                self._sim.getObject("./ultrasonicSensor[12]"),
-                self._sim.getObject("./ultrasonicSensor[13]"),
-                self._sim.getObject("./ultrasonicSensor[14]"),
-                self._sim.getObject("./ultrasonicSensor[15]")
-        ]
-        self._my_sensors_values.append(back_sensors)
-        connected_sensors = [
-            self._sim.getObject("/Vision_sensor")
-        ]
-        self._my_sensors_values.append(connected_sensors)
+        self._my_actuators_names = ["leftMotor", "rightMotor"]
+        # Get handles
+        self._my_actuators = {}
+        for act_name in self._my_actuators_names:
+            self._my_actuators[act_name] = self._sim.getObject("./" + act_name)
         print("SIM objects referenced")
 
-    def _read_proximity_sensors(self, i: int):
-        # i = 0 : front sensors
-        # i = 1 : back sensors
-        assert 0 <= i <= 1, "incorrect sensor array"
-        values = []
-        for sens in self._my_sensors_values[i]:
-            _, dis, _, _, _ = self._sim.readProximitySensor(sens)
-            values.append(dis)
-        return values
-
-    def _read_vision_sensors(self, i: int):
-        assert i == 2, "incorrect sensor array"
-        values = []
-        for sens in self._my_sensors_values[i]:
-            image, resolution = self._sim.getVisionSensorImg(sens)
-            values.append((image, resolution))
-        return values
-
-    def sense(self):
-        try:
-            vision_values = self._read_vision_sensors(2)  # only vision sensors
-            return vision_values
-        except Exception as e:
-            print(e)
+    def do_action(self, actuator_name, value):
+        assert actuator_name in self._my_actuators_names
+        actuator = self._my_actuators[actuator_name]
+        # This is only for velocity values
+        self._sim.setJointTargetVelocity(actuator, value)
 
     def start(self):
         self._sim.startSimulation()
