@@ -35,7 +35,8 @@ class Perceptor:
             stop = True
         client.publish(f"perception/hor_distance", stop)
 
-        trajectory_correction = max(-MAX_CORRECTION, min(MAX_CORRECTION, road_center_distance))
+        trajectory_correction = max(-MAX_CORRECTION,
+                                    min(MAX_CORRECTION, road_center_distance))
         if trajectory_correction != 0:
             print("Trajectory correction")
             correction = trajectory_correction
@@ -87,7 +88,8 @@ class Perceptor:
 
         green_mask = cv2.inRange(img, lower_green, upper_green)
 
-        contours, _ = cv2.findContours(green_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours, _ = cv2.findContours(
+            green_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         if contours:
             average_distance = np.mean([cv2.pointPolygonTest(
@@ -100,7 +102,8 @@ class Perceptor:
 
 def on_connect(client, userdata, flags, reason_code, properties):
     if reason_code.is_failure:
-        print(f"Failed to connect: {reason_code}. loop_forever() will retry connection")
+        print(
+            f"Failed to connect: {reason_code}. loop_forever() will retry connection")
     else:
         client.subscribe("sense/#")
 
@@ -111,7 +114,7 @@ def on_connect(client, userdata, flags, reason_code, properties):
 def on_message(client, userdata, msg):
     sensor_name = msg.topic.split("/")[1]
     message_value = msg.payload.decode("utf-8")
-    print("Recived")
+    print("Received")
     sensor_value = eval(message_value)
 
     image = sensor_value[0]
@@ -142,7 +145,8 @@ if __name__ == "__main__":
                            sensors=["Vision_sensor"],
                            perceptions=["free"])
 
-    client_mqtt = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, reconnect_on_failure=True)
+    client_mqtt = mqtt.Client(
+        mqtt.CallbackAPIVersion.VERSION2, reconnect_on_failure=True)
     client_mqtt.connect("mosquitto", 1883)
     client_mqtt.on_connect = on_connect
     client_mqtt.on_message = on_message
