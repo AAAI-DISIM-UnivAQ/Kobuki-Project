@@ -8,12 +8,9 @@ class Controller:
 
 
 def manage_hor_distance(client, distance):
-    print("Received distance: " + str(distance))
     if distance:
-        print("IF distance: " + str(distance))
         client.publish(f"controller/hor_distance", "Stop")
     else:
-        print("ELSE distance: " + str(distance))
         client.publish(f"controller/hor_distance", "Go")
 
 
@@ -22,8 +19,9 @@ def manage_correction(client, correction):
     left_speed = 2 - correction / MAX_CORRECTION
     right_speed = 2 + correction / MAX_CORRECTION
 
-    client.publish(f"controller/left_speed", left_speed)
-    client.publish(f"controller/right_speed", right_speed)
+    # client.publish(f"controller/left_speed", left_speed)
+    # client.publish(f"controller/right_speed", right_speed)
+    client.publish(f"controller/correction", f"{right_speed},{left_speed}")
 
 
 def on_connect(client, userdata, flags, reason_code, properties):
