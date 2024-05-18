@@ -33,6 +33,8 @@ def on_message(client, userdata, msg):
     perception_name = msg.topic.split("/")[1]
     message_value = msg.payload.decode("utf-8")
 
+    print("name:", perception_name)
+
     match perception_name:
         case "hor_distance":
             manage_hor_distance(client, message_value)

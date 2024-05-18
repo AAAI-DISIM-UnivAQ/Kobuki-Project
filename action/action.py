@@ -2,7 +2,6 @@ import paho.mqtt.client as mqtt
 from SimulatedRobot import SimulatedPioneerBody
 import time
 import threading
-import sys
 
 
 class Body:
@@ -44,7 +43,7 @@ class Body:
         print("Rotating 180 degrees")
         self.set_speeds(0, 0)  # Stop the robot
         # Short pause to ensure the robot stops before rotating
-        time.sleep(0.5)
+        # time.sleep(0.5)
 
         right_motor_speed = -1.0  # Negative speed for backward motion
         left_motor_speed = 1.0  # Positive speed for forward motion
@@ -55,7 +54,7 @@ class Body:
             f"Starting rotation: right_motor_speed = {right_motor_speed}, left_motor_speed = {left_motor_speed}, rotation_time = {rotation_time}")
         self.set_speeds(right_motor_speed, left_motor_speed)
         # Let the robot rotate for the specified time
-        time.sleep(rotation_time)
+        # time.sleep(rotation_time)
         self.set_speeds(0, 0)  # Stop the robot
         print("Rotation complete")
         self._is_rotating = False
@@ -82,14 +81,18 @@ def on_message(client, userdata, msg):
         print("Robot is rotating, ignoring command.")
         return
 
+    print("name:", name)
+
     match name:
         case "hor_distance":
             if value == "Stop":
+                print("Stop")
                 my_robot._is_rotating = True
                 my_robot.rotate_180()
-                time.sleep(0.5)
+                # time.sleep(0.5)
                 my_robot._is_rotating = False
         case "correction":
+            print("correction")
             speeds = value.split(",")
             my_robot.set_speeds(speeds[0], speeds[1])
         case _:
