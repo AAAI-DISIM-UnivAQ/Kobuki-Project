@@ -8,6 +8,7 @@ class Controller:
 
 
 def manage_hor_distance(client, distance):
+    distance = bool(distance)
     if distance:
         client.publish(f"controller/hor_distance", "Stop")
     else:

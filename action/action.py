@@ -1,7 +1,7 @@
 import paho.mqtt.client as mqtt
 from SimulatedRobot import SimulatedPioneerBody
-import time
 import threading
+import math
 
 
 class Body:
@@ -16,7 +16,7 @@ class Body:
         self._motions = motions
         self._actuators = actuators
         self._sim_body = SimulatedPioneerBody("PioneerP3DX")
-        # self._sim_body.start()
+        self._sim_body.start()
         self._lock = threading.Lock()
 
     def exists_actuator(self, name):
@@ -36,28 +36,59 @@ class Body:
     def can_move(self, direction):
         return direction in self._motions
 
+    def rotate_180_Giulia(self):
+        rotation_speed = 0.3
+        current_orientation = self._sim_body.getObjectOrientation(
+            self._sim_body, -1)
+        target_orientation = current_orientation[2] + math.pi
+
+        while True:
+            current_orientation = self._sim_body.getObjectOrientation(
+                self._sim_body, -1)
+            angle_diff = target_orientation - current_orientation[2]
+
+            # Assicuriamoci che l'angolo sia tra -pi e pi per evitare rotazioni eccessive
+            if angle_diff > math.pi:
+                angle_diff -= 2 * math.pi
+            elif angle_diff < -math.pi:
+                angle_diff += 2 * math.pi
+
+            # Se la differenza è minore di un certo valore, interrompiamo la rotazione
+            if abs(angle_diff) < 0.01:
+                break
+
+            # Impostiamo la velocità dei motori per ruotare il robot sul posto
+            self.set_speeds(-rotation_speed, -rotation_speed)
+
+            # Aggiungiamo un piccolo delay per dare il tempo al robot di aggiornare la posizione
+            # sleep(0.01)
+
+        # Ferma i motori dopo aver completato la rotazione
+        self.set_speeds(0, 0)
+
     def rotate_180(self):
         # def rotate():
         # with self._lock:
-        self._is_rotating = True
-        print("Rotating 180 degrees")
-        self.set_speeds(0, 0)  # Stop the robot
-        # Short pause to ensure the robot stops before rotating
-        # time.sleep(0.5)
+        while self._is_rotating:
+            # self._is_rotating = True
+            print("Rotating 180 degrees")
+            self.set_speeds(0, 0)  # Stop the robot
+            # Short pause to ensure the robot stops before rotating
+            # time.sleep(0.5)
 
-        right_motor_speed = -1.0  # Negative speed for backward motion
-        left_motor_speed = 1.0  # Positive speed for forward motion
-        # Adjust this value according to your robot's specifications and simulator
-        rotation_time = 2.0
+            right_motor_speed = -1.0  # Negative speed for backward motion
+            left_motor_speed = -1.0  # Positive speed for forward motion
+            # Adjust this value according to your robot's specifications and simulator
+            rotation_time = 2.0
 
-        print(
-            f"Starting rotation: right_motor_speed = {right_motor_speed}, left_motor_speed = {left_motor_speed}, rotation_time = {rotation_time}")
-        self.set_speeds(right_motor_speed, left_motor_speed)
-        # Let the robot rotate for the specified time
-        # time.sleep(rotation_time)
-        self.set_speeds(0, 0)  # Stop the robot
-        print("Rotation complete")
-        self._is_rotating = False
+            print(
+                f"Starting rotation: right_motor_speed={right_motor_speed}, left_motor_speed={left_motor_speed}, rotation_time={rotation_time}")
+            self.set_speeds(right_motor_speed, left_motor_speed)
+            # Let the robot rotate for the specified time
+            # sleep(rotation_time)
+            self.set_speeds(0, 0)  # Stop the robot
+            print("Rotation complete")
+            self._is_rotating = False
 
         # if not self._is_rotating:
         # threading.Thread(target=rotate).start()
@@ -88,11 +119,10 @@ def on_message(client, userdata, msg):
             if value == "Stop":
                 print("Stop")
                 my_robot._is_rotating = True
-                my_robot.rotate_180()
+                my_robot.rotate_180_Giulia()
                 # time.sleep(0.5)
                 my_robot._is_rotating = False
         case "correction":
-            print("correction")
             speeds = value.split(",")
             my_robot.set_speeds(speeds[0], speeds[1])
         case _:
