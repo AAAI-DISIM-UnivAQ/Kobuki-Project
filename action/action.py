@@ -2,6 +2,7 @@ import paho.mqtt.client as mqtt
 from SimulatedRobot import SimulatedPioneerBody
 import time
 import threading
+import sys
 
 
 class Body:
@@ -16,7 +17,7 @@ class Body:
         self._motions = motions
         self._actuators = actuators
         self._sim_body = SimulatedPioneerBody("PioneerP3DX")
-        self._sim_body.start()
+        # self._sim_body.start()
         self._lock = threading.Lock()
 
     def exists_actuator(self, name):
@@ -28,7 +29,8 @@ class Body:
 
     def set_speeds(self, right_speed, left_speed):
         if not self._is_rotating:
-            print(f"Setting speeds: right = {right_speed}, left = {left_speed}")
+            print(
+                f"Setting speeds: right = {right_speed}, left = {left_speed}")
             self.do_action("rightMotor", right_speed)
             self.do_action("leftMotor", left_speed)
 
@@ -36,26 +38,30 @@ class Body:
         return direction in self._motions
 
     def rotate_180(self):
-        def rotate():
-            with self._lock:
-                self._is_rotating = True
-                print("Rotating 180 degrees")
-                self.set_speeds(0, 0)  # Stop the robot
-                time.sleep(0.5)  # Short pause to ensure the robot stops before rotating
+        # def rotate():
+        # with self._lock:
+        self._is_rotating = True
+        print("Rotating 180 degrees")
+        self.set_speeds(0, 0)  # Stop the robot
+        # Short pause to ensure the robot stops before rotating
+        time.sleep(0.5)
 
-                right_motor_speed = -1.0  # Negative speed for backward motion
-                left_motor_speed = 1.0  # Positive speed for forward motion
-                rotation_time = 2.0  # Adjust this value according to your robot's specifications and simulator
+        right_motor_speed = -1.0  # Negative speed for backward motion
+        left_motor_speed = 1.0  # Positive speed for forward motion
+        # Adjust this value according to your robot's specifications and simulator
+        rotation_time = 2.0
 
-                print(f"Starting rotation: right_motor_speed = {right_motor_speed}, left_motor_speed = {left_motor_speed}, rotation_time = {rotation_time}")
-                self.set_speeds(right_motor_speed, left_motor_speed)
-                time.sleep(rotation_time)  # Let the robot rotate for the specified time
-                self.set_speeds(0, 0)  # Stop the robot
-                print("Rotation complete")
-                self._is_rotating = False
+        print(
+            f"Starting rotation: right_motor_speed = {right_motor_speed}, left_motor_speed = {left_motor_speed}, rotation_time = {rotation_time}")
+        self.set_speeds(right_motor_speed, left_motor_speed)
+        # Let the robot rotate for the specified time
+        time.sleep(rotation_time)
+        self.set_speeds(0, 0)  # Stop the robot
+        print("Rotation complete")
+        self._is_rotating = False
 
-        if not self._is_rotating:
-            threading.Thread(target=rotate).start()
+        # if not self._is_rotating:
+        # threading.Thread(target=rotate).start()
 
 
 def on_connect(client, userdata, flags, reason_code, properties):
@@ -67,41 +73,28 @@ def on_connect(client, userdata, flags, reason_code, properties):
 
 
 def on_message(client, userdata, msg):
-    # sim = SimulatedPioneerBody("Ritardato")
-    # print("---------")
-    # values = {}
     name = msg.topic.split("/")[1]
     value = msg.payload.decode("utf-8")
-    # values[name] = value
-    # print(f"{name}: {value}")
 
-    print(my_robot._is_rotating)
+    print("is_rotating:", my_robot._is_rotating)
 
     if my_robot._is_rotating:
         print("Robot is rotating, ignoring command.")
-        # my_robot.set_speeds(0, 0)
         return
 
     match name:
         case "hor_distance":
-            # if values[name] == "Stop":
             if value == "Stop":
-                # my_robot._sim_body.stop()
                 my_robot._is_rotating = True
                 my_robot.rotate_180()
-                # my_robot._is_rotating = True
-                # my_robot.set_speeds(0, 0)
-                time.sleep(2)
+                time.sleep(0.5)
                 my_robot._is_rotating = False
-        # case "left_speed":
-            # print(values[name])
-        # case "right_speed":
-            # print(values[name])
         case "correction":
-            # print("EXE Correction")
-            # speeds = values[name].split(",")
             speeds = value.split(",")
             my_robot.set_speeds(speeds[0], speeds[1])
+        case _:
+            print("Errore inaspettato")
+            my_robot._sim_body.stop()
 
 
 def on_subscribe(client, userdata, mid, reason_code_list, properties):
@@ -119,6 +112,6 @@ if __name__ == "__main__":
         mqtt.CallbackAPIVersion.VERSION2, reconnect_on_failure=True)
     client_mqtt.connect("mosquitto", 1883)
     client_mqtt.on_connect = on_connect
-    # client_mqtt.on_message = on_message
+    client_mqtt.on_message = on_message
     client_mqtt.on_subscribe = on_subscribe
     client_mqtt.loop_forever()
