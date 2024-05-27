@@ -52,10 +52,6 @@ try:
         left = read_proximity_sensor(left_sensor)
         right = read_proximity_sensor(right_sensor)
 
-        # print("Front Sensor", front)
-        # print("Left Sensor", left)
-        # print("Right Sensor", right)
-
         on_line_left = interpret_color(left)
         on_line_right = interpret_color(right)
         on_line_front = interpret_color(front)
@@ -69,17 +65,17 @@ try:
         # Sensori davanti e sinistra --> scegli a caso tra davanti e sinistra
         elif on_line_front and on_line_left and not on_line_right:
             sim.setJointTargetVelocity(
-                left_wheel_handle, base_speed - turn_speed)
+                left_wheel_handle, -turn_speed)
             sim.setJointTargetVelocity(
-                right_wheel_handle, base_speed + turn_speed)
+                right_wheel_handle, turn_speed)
 
             print("Adjust Left")
         # Sensori davanti e destra --> scegli a caso tra davanti e destra
         elif on_line_front and on_line_right and not on_line_left:
             sim.setJointTargetVelocity(
-                left_wheel_handle, base_speed + turn_speed)
+                left_wheel_handle, turn_speed)
             sim.setJointTargetVelocity(
-                right_wheel_handle, base_speed - turn_speed)
+                right_wheel_handle, -turn_speed)
 
             print("Adjust Right")
         # Sensori davanti, sinistra e destra --> scegli a caso tra davanti, sinistra e destra
