@@ -1,5 +1,4 @@
 from coppeliasim_zmqremoteapi_client import RemoteAPIClient
-import sys
 import time
 import random
 
@@ -48,6 +47,11 @@ is_rotating = False
 
 try:
     while True:
+
+        sim.setJointTargetVelocity(left_wheel_handle, base_speed)
+        sim.setJointTargetVelocity(right_wheel_handle, base_speed)
+        time.sleep(1)
+
         front = read_proximity_sensor(front_sensor)
         left = read_proximity_sensor(left_sensor)
         right = read_proximity_sensor(right_sensor)
@@ -64,18 +68,14 @@ try:
             print("Go")
         # Sensori davanti e sinistra --> scegli a caso tra davanti e sinistra
         elif on_line_front and on_line_left and not on_line_right:
-            sim.setJointTargetVelocity(
-                left_wheel_handle, -turn_speed)
-            sim.setJointTargetVelocity(
-                right_wheel_handle, turn_speed)
+            sim.setJointTargetVelocity(left_wheel_handle, -turn_speed)
+            sim.setJointTargetVelocity(right_wheel_handle, turn_speed)
 
             print("Adjust Left")
         # Sensori davanti e destra --> scegli a caso tra davanti e destra
         elif on_line_front and on_line_right and not on_line_left:
-            sim.setJointTargetVelocity(
-                left_wheel_handle, turn_speed)
-            sim.setJointTargetVelocity(
-                right_wheel_handle, -turn_speed)
+            sim.setJointTargetVelocity(left_wheel_handle, turn_speed)
+            sim.setJointTargetVelocity(right_wheel_handle, -turn_speed)
 
             print("Adjust Right")
         # Sensori davanti, sinistra e destra --> scegli a caso tra davanti, sinistra e destra
@@ -108,10 +108,6 @@ try:
         # Sensori destra e sinistra --> scegli a caso tra destra e sinistra
         elif on_line_left and on_line_right and not on_line_front:
             rand = random.randint(1, 2)
-
-            sim.setJointTargetVelocity(left_wheel_handle, base_speed)
-            sim.setJointTargetVelocity(right_wheel_handle, base_speed)
-            time.sleep(1)
 
             match rand:
                 case 1:
