@@ -43,15 +43,9 @@ base_speed = 2.0
 turn_speed = 0.5
 black = [0.0, 0.0, 0.0]
 
-is_rotating = False
 
 try:
     while True:
-
-        sim.setJointTargetVelocity(left_wheel_handle, base_speed)
-        sim.setJointTargetVelocity(right_wheel_handle, base_speed)
-        time.sleep(1)
-
         front = read_proximity_sensor(front_sensor)
         left = read_proximity_sensor(left_sensor)
         right = read_proximity_sensor(right_sensor)
@@ -108,6 +102,10 @@ try:
         # Sensori destra e sinistra --> scegli a caso tra destra e sinistra
         elif on_line_left and on_line_right and not on_line_front:
             rand = random.randint(1, 2)
+
+            sim.setJointTargetVelocity(left_wheel_handle, base_speed)
+            sim.setJointTargetVelocity(right_wheel_handle, base_speed)
+            time.sleep(1)
 
             match rand:
                 case 1:
