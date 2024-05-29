@@ -1,5 +1,4 @@
 from coppeliasim_zmqremoteapi_client import RemoteAPIClient
-import sys
 import time
 import random
 
