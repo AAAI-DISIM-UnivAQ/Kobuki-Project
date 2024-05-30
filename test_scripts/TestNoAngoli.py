@@ -38,84 +38,12 @@ right_sensor = sim.getObjectHandle("/Right_Proximity_sensor")
 sim.startSimulation()
 
 # Parameters for wheel speeds
-base_speed = 0.5
-turn_speed = 0.2
+base_speed = 2.0
+turn_speed = 0.8
+correction_speed = 0.5
 intersection_delay = 1.0
 
-choice_made = False
-
 try:
-    """
-
-        # Rileva un incrocio
-        if on_line_front and (on_line_left or on_line_right):
-
-                    # Esegui l'azione corrispondente
-                    if direction == "Right":
-                        sim.setJointTargetVelocity(left_wheel_handle, turn_speed)
-                        sim.setJointTargetVelocity(right_wheel_handle, -turn_speed)
-                        rotating = True  # Imposta il flag a True durante la rotazione
-                        rotating_at_intersection = True  # Imposta il flag a True durante la rotazione agli incroci
-                        print("Turning right")
-
-                    elif direction == "Left":
-                        sim.setJointTargetVelocity(left_wheel_handle, -turn_speed)
-                        sim.setJointTargetVelocity(right_wheel_handle, turn_speed)
-                        rotating = True  # Imposta il flag a True durante la rotazione
-                        rotating_at_intersection = True  # Imposta il flag a True durante la rotazione agli incroci
-                        print("Turning left")
-
-                    elif direction == "Forward":
-                        print("Going straight")
-
-                else:
-                    print("No options, stopping")
-                    sim.setJointTargetVelocity(left_wheel_handle, 0)
-                    sim.setJointTargetVelocity(right_wheel_handle, 0)
-            else:
-                print("Choice already made, going straight")
-        else:
-            # Resetta il flag di scelta fatta quando i sensori non rilevano l'incrocio
-            choice_made = False
-
-            # Se il robot sta eseguendo una rotazione, non considerare lo stato della linea persa
-            if rotating:
-                if not rotating_at_intersection and on_line_front:
-                    rotating = False  # Riattiva il meccanismo di "linea persa" dopo la rotazione
-                elif rotating_at_intersection and on_line_front:  # Interrompi la rotazione se rileva nuovamente la linea
-                    sim.setJointTargetVelocity(left_wheel_handle, base_speed)
-                    sim.setJointTargetVelocity(right_wheel_handle, base_speed)
-                    print("Line found while turning, going straight")
-                    rotating = False
-                    rotating_at_intersection = False
-                else:
-                    continue  # Continua a ruotare finché non rileva nuovamente la linea
-            else:
-                # Se nessuno dei tre sensori rileva la linea, fermati
-                if not on_line_left and not on_line_right and not on_line_front:
-                    sim.setJointTargetVelocity(left_wheel_handle, 0)
-                    sim.setJointTargetVelocity(right_wheel_handle, 0)
-                    print("Line lost, stopping")
-                else:
-                    # Se è stata persa momentaneamente, continua a muoverti dritto
-                    if not choice_made:
-                        sim.setJointTargetVelocity(left_wheel_handle, base_speed)
-                        sim.setJointTargetVelocity(right_wheel_handle, base_speed)
-                        print("Line momentarily lost, continuing straight")
-                    else:
-                        # Se è stata persa ma è stata già fatta una scelta, continua quella direzione
-                        if direction == "Right" or direction == "Left":
-                            sim.setJointTargetVelocity(left_wheel_handle, turn_speed)
-                            sim.setJointTargetVelocity(right_wheel_handle, -turn_speed)
-                            print("Continuing turning")
-                        elif direction == "Forward" and on_line_front:
-                            sim.setJointTargetVelocity(left_wheel_handle, base_speed)
-                            sim.setJointTargetVelocity(right_wheel_handle, base_speed)
-                            print("Continuing straight")
-
-        # Opzionale: aggiungi un ritardo per dare il tempo al robot di ruotare prima di valutare nuovamente la linea
-        time.sleep(0.1)
-    """
     while True:
         # Lettura dei sensori
         front, front_distance = read_proximity_sensor(front_sensor)
@@ -139,12 +67,12 @@ try:
 
             # Scegli una direzione casuale in base ai sensori
             options = []
-            # if on_line_left:
-                # options.append("Left")
+            if on_line_left:
+                options.append("Left")
             if on_line_right:
                 options.append("Right")
-            # if on_line_front:
-                # options.append("Forward")
+            if on_line_front:
+                options.append("Forward")
 
             if options:  # Se ci sono opzioni disponibili
                 direction = random.choice(options)
@@ -173,7 +101,7 @@ try:
                         print("front", front, on_line_front, front_distance)
 
                     print("Rotation complete")
-                    time.sleep(0.25)
+                    #time.sleep(0.25)
                     sim.setJointTargetVelocity(left_wheel_handle, 0)
                     sim.setJointTargetVelocity(right_wheel_handle, 0)
 
@@ -189,7 +117,7 @@ try:
                         front, front_distance = read_proximity_sensor(front_sensor)
                         on_line_front = interpret_color(front)
                         print("front", front, on_line_front, front_distance)
-                    time.sleep(0.15)
+                    #time.sleep(0.15)
                     print("Rotation complete")
                     sim.setJointTargetVelocity(left_wheel_handle, 0)
                     sim.setJointTargetVelocity(right_wheel_handle, 0)
@@ -205,8 +133,25 @@ try:
                 sim.setJointTargetVelocity(right_wheel_handle, 0)
 
         elif on_line_front and not (on_line_left or on_line_right):
+            print("Go straight")
             sim.setJointTargetVelocity(left_wheel_handle, base_speed)
             sim.setJointTargetVelocity(right_wheel_handle, base_speed)
+
+        """
+        elif not on_line_front:
+            if on_line_left:
+                print("right correction")
+                sim.setJointTargetVelocity(left_wheel_handle, base_speed - correction_speed)
+                sim.setJointTargetVelocity(right_wheel_handle, base_speed + correction_speed)
+            elif on_line_right:
+                print("left correction")
+                sim.setJointTargetVelocity(left_wheel_handle, base_speed + correction_speed)
+                sim.setJointTargetVelocity(right_wheel_handle, base_speed - correction_speed)
+            else:
+                print("Stop")
+                sim.setJointTargetVelocity(left_wheel_handle, 0)
+                sim.setJointTargetVelocity(right_wheel_handle, 0)
+        """
 
 finally:
     sim.stopSimulation()
