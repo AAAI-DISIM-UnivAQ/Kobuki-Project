@@ -1,3 +1,4 @@
+#il problma di questo codice è che dopo aver girato perde la linea.
 from coppeliasim_zmqremoteapi_client import RemoteAPIClient
 import time
 import random
@@ -43,6 +44,10 @@ intersection_delay = 2.0
 choice_made = False
 
 try:
+    rotating = False  # Flag per indicare se il robot sta eseguendo una rotazione
+    rotating_at_intersection = False  # Flag per indicare se il robot sta ruotando agli incroci
+    direction = None  # Direzione scelta
+
     while True:
         # Lettura dei sensori
         front, front_distance = read_proximity_sensor(front_sensor)
@@ -90,31 +95,19 @@ try:
                     if direction == "Right":
                         sim.setJointTargetVelocity(left_wheel_handle, turn_speed)
                         sim.setJointTargetVelocity(right_wheel_handle, -turn_speed)
+                        rotating = True  # Imposta il flag a True durante la rotazione
+                        rotating_at_intersection = True  # Imposta il flag a True durante la rotazione agli incroci
                         print("Turning right")
-                        # Aggiungi un ritardo per dare il tempo al robot di iniziare a girare
-                        time.sleep(0.2)
-                        while not interpret_color(read_proximity_sensor(front_sensor)[0]):
-                            time.sleep(0.05)  # Continua a girare finché il sensore frontale non rileva la linea
-                        sim.setJointTargetVelocity(left_wheel_handle, 0)
-                        sim.setJointTargetVelocity(right_wheel_handle, 0)
-                        print("Line detected, going straight")
 
                     elif direction == "Left":
                         sim.setJointTargetVelocity(left_wheel_handle, -turn_speed)
                         sim.setJointTargetVelocity(right_wheel_handle, turn_speed)
+                        rotating = True  # Imposta il flag a True durante la rotazione
+                        rotating_at_intersection = True  # Imposta il flag a True durante la rotazione agli incroci
                         print("Turning left")
-                        # Aggiungi un ritardo per dare il tempo al robot di iniziare a girare
-                        time.sleep(0.2)
-                        while not interpret_color(read_proximity_sensor(front_sensor)[0]):
-                            time.sleep(0.05)  # Continua a girare finché il sensore frontale non rileva la linea
-                        sim.setJointTargetVelocity(left_wheel_handle, 0)
-                        sim.setJointTargetVelocity(right_wheel_handle, 0)
-                        print("Line detected, going straight")
 
                     elif direction == "Forward":
-                        sim.setJointTargetVelocity(left_wheel_handle, base_speed)
-                        sim.setJointTargetVelocity(right_wheel_handle, base_speed)
-                        print("Going forward")
+                        print("Going straight")
 
                 else:
                     print("No options, stopping")
@@ -126,19 +119,47 @@ try:
             # Resetta il flag di scelta fatta quando i sensori non rilevano l'incrocio
             choice_made = False
 
-            # Se nessuno dei tre sensori rileva la linea, fermati
-            if not on_line_left and not on_line_right and not on_line_front:
-                sim.setJointTargetVelocity(left_wheel_handle, 0)
-                sim.setJointTargetVelocity(right_wheel_handle, 0)
-                print("Line lost, stopping")
+            # Se il robot sta eseguendo una rotazione, non considerare lo stato della linea persa
+            if rotating:
+                if not rotating_at_intersection and on_line_front:
+                    rotating = False  # Riattiva il meccanismo di "linea persa" dopo la rotazione
+                elif rotating_at_intersection and on_line_front:  # Interrompi la rotazione se rileva nuovamente la linea
+                    sim.setJointTargetVelocity(left_wheel_handle, base_speed)
+                    sim.setJointTargetVelocity(right_wheel_handle, base_speed)
+                    print("Line found while turning, going straight")
+                    rotating = False
+                    rotating_at_intersection = False
+                else:
+                    continue  # Continua a ruotare finché non rileva nuovamente la linea
             else:
-                # Altrimenti, vai dritto
-                sim.setJointTargetVelocity(left_wheel_handle, base_speed)
-                sim.setJointTargetVelocity(right_wheel_handle, base_speed)
-                print("Going straight")
+                # Se nessuno dei tre sensori rileva la linea, fermati
+                if not on_line_left and not on_line_right and not on_line_front:
+                    sim.setJointTargetVelocity(left_wheel_handle, 0)
+                    sim.setJointTargetVelocity(right_wheel_handle, 0)
+                    print("Line lost, stopping")
+                else:
+                    # Se è stata persa momentaneamente, continua a muoverti dritto
+                    if not choice_made:
+                        sim.setJointTargetVelocity(left_wheel_handle, base_speed)
+                        sim.setJointTargetVelocity(right_wheel_handle, base_speed)
+                        print("Line momentarily lost, continuing straight")
+                    else:
+                        # Se è stata persa ma è stata già fatta una scelta, continua quella direzione
+                        if direction == "Right" or direction == "Left":
+                            sim.setJointTargetVelocity(left_wheel_handle, turn_speed)
+                            sim.setJointTargetVelocity(right_wheel_handle, -turn_speed)
+                            print("Continuing turning")
+                        elif direction == "Forward" and on_line_front:
+                            sim.setJointTargetVelocity(left_wheel_handle, base_speed)
+                            sim.setJointTargetVelocity(right_wheel_handle, base_speed)
+                            print("Continuing straight")
 
-        # Optional: Aggiungi un piccolo ritardo per evitare sovraccarichi nella simulazione
-        time.sleep(0.05)
+        # Opzionale: aggiungi un ritardo per dare il tempo al robot di ruotare prima di valutare nuovamente la linea
+        time.sleep(0.1)
 
 finally:
     sim.stopSimulation()
+
+
+
+
