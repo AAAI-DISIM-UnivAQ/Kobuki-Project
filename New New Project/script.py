@@ -93,9 +93,9 @@ if __name__ == "__main__":
     left_wheel_handle = sim.getObjectHandle("/PioneerP3DX/leftMotor")
     right_wheel_handle = sim.getObjectHandle("/PioneerP3DX/rightMotor")
 
-    left = sim.getObject("./ultrasonicSensor[0]")
-    front = sim.getObject("./ultrasonicSensor[4]")
-    right = sim.getObject("./ultrasonicSensor[7]")
+    left = sim.getObjectHandle("/Left_Proximity_sensor")
+    front = sim.getObjectHandle("/Front_Proximity_sensor")
+    right = sim.getObjectHandle("/Right_Proximity_sensor")
 
     base_speed = 1.0
     turn_speed = 0.3
