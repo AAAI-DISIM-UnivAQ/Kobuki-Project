@@ -1,0 +1,52 @@
+version: '3'
+
+services:
+
+  sense_module:
+    image: app/sense_image
+    build: ./sense
+    container_name: sense_module
+    hostname: sense_module
+    environment:
+      - TZ=Europe/Rome
+
+  action_module:
+    image: app/action_image
+    build: ./action
+    container_name: action_module
+    hostname: action_module
+    environment:
+      - TZ=Europe/Rome
+
+  perc_module:
+    image: app/perception_image
+    build: ./perception
+    container_name: perc_module
+    hostname: perc_module
+    environment:
+      - TZ=Europe/Rome
+    depends_on:
+      - sense_module
+
+  controller:
+    image: app/controller_image
+    build: ./controller
+    container_name: controller
+    hostname: controller
+    depends_on:
+      - sense_module
+      - action_module
+      - perc_module
+
+  mosquitto_module:
+    image: eclipse-mosquitto:latest
+    container_name: mosquitto_module
+    hostname: mosquitto_module
+    volumes:
+      - ./mosquitto:/mosquitto
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    environment:
+      - TZ=Europe/Rome
+
