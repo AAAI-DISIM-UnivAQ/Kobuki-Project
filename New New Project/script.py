@@ -1,36 +1,62 @@
 from coppeliasim_zmqremoteapi_client import RemoteAPIClient
 import random
 import time
+import math
+import sys
+
+
+def normalize_angle(angle):
+    return math.atan2(math.sin(angle), math.cos(angle))
 
 
 def turn_left():
-    sim.setJointTargetVelocity(left_wheel_handle, -turn_speed)
-    sim.setJointTargetVelocity(left_wheel_handle, turn_speed)
-    print("Turning left...")
+    initial_angle = sim.getObjectOrientation(robot_handle, -1)[2]
+    target_angle = normalize_angle(initial_angle + math.pi / 2)
+    angle = False
+    while not angle:
+        current_angle = sim.getObjectOrientation(robot_handle, -1)[2]
+        current_angle = normalize_angle(current_angle)
+        angle = abs(normalize_angle(current_angle - target_angle)) <= 0.01
+
+        sim.setJointTargetVelocity(left_wheel_handle, -turn_speed)
+        sim.setJointTargetVelocity(right_wheel_handle, turn_speed)
+        print("Turning left...")
+        time.sleep(0.05)
 
 
 def turn_right():
-    sim.setJointTargetVelocity(left_wheel_handle, turn_speed)
-    sim.setJointTargetVelocity(left_wheel_handle, -turn_speed)
-    print("Turning right...")
+    initial_angle = sim.getObjectOrientation(robot_handle, -1)[2]
+    target_angle = normalize_angle(initial_angle - math.pi / 2)
+    angle = False
+    while not angle:
+        current_angle = sim.getObjectOrientation(robot_handle, -1)[2]
+        current_angle = normalize_angle(current_angle)
+        angle = abs(normalize_angle(current_angle - target_angle)) <= 0.01
+
+        sim.setJointTargetVelocity(left_wheel_handle, turn_speed)
+        sim.setJointTargetVelocity(right_wheel_handle, -turn_speed)
+        print("Turning right...")
+        time.sleep(0.05)
 
 
 def go_straight():
     sim.setJointTargetVelocity(left_wheel_handle, base_speed)
     sim.setJointTargetVelocity(right_wheel_handle, base_speed)
-    print("Continuing straight")
+    # print("Continuing straight")
 
 
 def stop():
     sim.setJointTargetVelocity(left_wheel_handle, 0)
     sim.setJointTargetVelocity(right_wheel_handle, 0)
-    print("Stopping")
+    # print("Stopping")
 
 
 def turn_randomly(left, right, front):
-    sim.setJointTargetVelocity(left_wheel_handle, 0)
-    sim.setJointTargetVelocity(right_wheel_handle, 0)
     print("Intersection detected, choosing direction...")
+
+    sim.setJointTargetVelocity(left_wheel_handle, base_speed)
+    sim.setJointTargetVelocity(right_wheel_handle, base_speed)
+    time.sleep(1.5)
 
     options = []
     if front:
@@ -50,14 +76,13 @@ def turn_randomly(left, right, front):
         elif direction == "Front":
             go_straight()
     else:
-        print("Unexpected Error, stopping.")
+        print("Unexpected Error, Stopping.")
         stop()
 
 
 def is_free(sensor):
-    _, perception, _, _, _ = sim.readProximitySensor(sensor)
-    print(sensor, perception)
-    return perception == 0 or perception > MIN_DISTANCE
+    _, dist, _, _, _ = sim.readProximitySensor(sensor)
+    return dist == 0 or dist > MIN_DISTANCE
 
 
 if __name__ == "__main__":
@@ -71,28 +96,37 @@ if __name__ == "__main__":
     left = sim.getObject("./ultrasonicSensor[0]")
     front = sim.getObject("./ultrasonicSensor[4]")
     right = sim.getObject("./ultrasonicSensor[7]")
-    print(left, front, right)
 
-    base_speed = 2.0
-    turn_speed = 0.1
-    MIN_DISTANCE = 0.5
+    base_speed = 1.0
+    turn_speed = 0.3
+    MIN_DISTANCE = 0.4
+
+    sim.startSimulation()
+    time.sleep(0.2)
 
     try:
         while True:
-            if is_free(front):
-                if not is_free(left) and not is_free(right):
+
+            front_free = is_free(front)
+            left_free = is_free(left)
+            right_free = is_free(right)
+
+            if front_free:
+                if not left_free and not right_free:
                     go_straight()
                 else:
-                    turn_randomly(left=True, front=True, right=True)
+                    turn_randomly(left=left_free,
+                                  front=front_free, right=right_free)
             else:
-                if not is_free(left) and not is_free(right):
+                if not left_free and not right_free:
                     stop()
-                elif is_free(left) and not is_free(right):
+                elif left_free and not right_free:
                     turn_left()
-                elif is_free(right) and not is_free(left):
+                elif right_free and not left_free:
                     turn_right()
-                elif is_free(left) and is_free(right):
-                    turn_randomly(left=True, front=False, right=True)
+                elif left_free and right_free:
+                    turn_randomly(left=left_free,
+                                  front=front_free, right=right_free)
 
             time.sleep(0.05)
 
