@@ -55,7 +55,7 @@ def turn_randomly(left, right, front):
     print("Intersection detected, choosing direction...")
     sim.setJointTargetVelocity(left_wheel_handle, base_speed)
     sim.setJointTargetVelocity(right_wheel_handle, base_speed)
-    time.sleep(dist / base_speed)
+    time.sleep(DIST / base_speed)
 
     options = []
     if front:
@@ -158,7 +158,7 @@ if __name__ == "__main__":
     RIGHT_DIST = get_distance(right)
     ROBOT_X = 0.51901
     ROBOT_Y = 0.415
-    dist = LEFT_DIST + RIGHT_DIST + ROBOT_X + ROBOT_Y / 2
+    DIST = LEFT_DIST + RIGHT_DIST + 2 * ROBOT_X + 2 * ROBOT_Y
 
     try:
         while True:
@@ -169,7 +169,6 @@ if __name__ == "__main__":
             front_dist = get_distance(front)
             left_dist = get_distance(left)
             right_dist = get_distance(right)
-            # print(front_dist, left_dist, right_dist)
 
             # stay_in_center(left_dist, right_dist)
 
@@ -181,24 +180,22 @@ if __name__ == "__main__":
                     # print("front, left, right")
                     turn_randomly(left=left_free,
                                   front=front_free, right=right_free)
+
+                    sim.setJointTargetVelocity(left_wheel_handle, base_speed)
+                    sim.setJointTargetVelocity(right_wheel_handle, base_speed)
+                    time.sleep(DIST / base_speed)
             else:
                 if not left_free and not right_free:
                     stop()
                     print("Nowhere to go, stopping.")
-                elif left_free and not right_free:
-                    # print("not frotn, left, not right")
-                    turn_left()
-                elif right_free and not left_free:
-                    # print("not front, not left, right")
-                    turn_right()
-                elif left_free and right_free:
+                else:
                     # print("not front, left, right")
                     turn_randomly(left=left_free,
                                   front=front_free, right=right_free)
 
-            sim.setJointTargetVelocity(left_wheel_handle, base_speed)
-            sim.setJointTargetVelocity(right_wheel_handle, base_speed)
-            time.sleep((LEFT_DIST + ROBOT_X + ROBOT_Y) / base_speed)
+                    sim.setJointTargetVelocity(left_wheel_handle, base_speed)
+                    sim.setJointTargetVelocity(right_wheel_handle, base_speed)
+                    time.sleep(DIST / base_speed)
 
             time.sleep(0.05)
 
