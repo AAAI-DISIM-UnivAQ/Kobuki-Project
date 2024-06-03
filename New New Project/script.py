@@ -43,7 +43,6 @@ def turn_right():
 def go_straight():
     sim.setJointTargetVelocity(left_wheel_handle, base_speed)
     sim.setJointTargetVelocity(right_wheel_handle, base_speed)
-    print("Continuing straight")
 
 
 def stop():
@@ -194,8 +193,9 @@ if __name__ == "__main__":
                     turn_right()
                 elif left_free and right_free:
                     # print("not front, left, right")
-                    turn_randomly(left_dist + right_dist, left=left_free,
+                    turn_randomly(left=left_free,
                                   front=front_free, right=right_free)
+
             sim.setJointTargetVelocity(left_wheel_handle, base_speed)
             sim.setJointTargetVelocity(right_wheel_handle, base_speed)
             time.sleep((LEFT_DIST + ROBOT_X + ROBOT_Y) / base_speed)
