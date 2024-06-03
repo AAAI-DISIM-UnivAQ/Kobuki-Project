@@ -13,6 +13,7 @@ def turn_left():
     initial_angle = sim.getObjectOrientation(robot_handle, -1)[2]
     target_angle = normalize_angle(initial_angle + math.pi / 2)
     angle = False
+
     while not angle:
         current_angle = sim.getObjectOrientation(robot_handle, -1)[2]
         current_angle = normalize_angle(current_angle)
@@ -28,6 +29,7 @@ def turn_right():
     initial_angle = sim.getObjectOrientation(robot_handle, -1)[2]
     target_angle = normalize_angle(initial_angle - math.pi / 2)
     angle = False
+
     while not angle:
         current_angle = sim.getObjectOrientation(robot_handle, -1)[2]
         current_angle = normalize_angle(current_angle)
@@ -51,12 +53,11 @@ def stop():
     # print("Stopping")
 
 
-def turn_randomly(left, right, front):
+def turn_randomly(dist, left, right, front):
     print("Intersection detected, choosing direction...")
 
     sim.setJointTargetVelocity(left_wheel_handle, base_speed)
     sim.setJointTargetVelocity(right_wheel_handle, base_speed)
-    time.sleep(1.5)
 
     options = []
     if front:
@@ -80,8 +81,58 @@ def turn_randomly(left, right, front):
         stop()
 
 
+def stay_in_center(left, right):
+    kp = 0.5
+    kd = 0.1
+    threshold = 0.1
+    base_speed = 1.0
+
+    previous_error = 0.0
+
+    while True:
+        error = left - right
+        derivative = error - previous_error
+
+        # Calcolare la correzione con controllo PD
+        correction = kp * error + kd * derivative
+
+        # Applicare la correzione solo se l'errore è sopra la soglia
+        if abs(error) > threshold:
+            if error > 0:
+                # Correzione a sinistra
+                sim.setJointTargetVelocity(
+                    left_wheel_handle, base_speed - correction)
+                sim.setJointTargetVelocity(
+                    right_wheel_handle, base_speed + correction)
+                print("Correzione a sinistra")
+            else:
+                # Correzione a destra
+                sim.setJointTargetVelocity(
+                    left_wheel_handle, base_speed + correction)
+                sim.setJointTargetVelocity(
+                    right_wheel_handle, base_speed - correction)
+                print("Correzione a destra")
+        else:
+            # Procedere dritto se l'errore è sotto la soglia
+            sim.setJointTargetVelocity(left_wheel_handle, base_speed)
+            sim.setJointTargetVelocity(right_wheel_handle, base_speed)
+            print("Procedo dritto")
+
+            # Aggiungere un breve ritardo per stabilizzare il movimento
+            time.sleep(0.5)
+
+        # Aggiornare l'errore precedente
+        previous_error = error
+
+
+def get_distance(sensor):
+    _, dist, _, _, _ = sim.readProximitySensor(sensor)
+    return dist
+
+
 def is_free(sensor):
     _, dist, _, _, _ = sim.readProximitySensor(sensor)
+    # print(sensor, dist)
     return dist == 0 or dist > MIN_DISTANCE
 
 
@@ -93,9 +144,9 @@ if __name__ == "__main__":
     left_wheel_handle = sim.getObjectHandle("/PioneerP3DX/leftMotor")
     right_wheel_handle = sim.getObjectHandle("/PioneerP3DX/rightMotor")
 
-    left = sim.getObjectHandle("/Left_Proximity_sensor")
-    front = sim.getObjectHandle("/Front_Proximity_sensor")
-    right = sim.getObjectHandle("/Right_Proximity_sensor")
+    left = sim.getObjectHandle("/ultrasonicSensor[0]")
+    front = sim.getObjectHandle("/ultrasonicSensor[4]")
+    right = sim.getObjectHandle("/ultrasonicSensor[7]")
 
     base_speed = 1.0
     turn_speed = 0.3
@@ -106,26 +157,38 @@ if __name__ == "__main__":
 
     try:
         while True:
-
             front_free = is_free(front)
             left_free = is_free(left)
             right_free = is_free(right)
 
+            front_dist = get_distance(front)
+            left_dist = get_distance(left)
+            right_dist = get_distance(right)
+            # print(front_dist, left_dist, right_dist)
+
+            # stay_in_center(left_dist, right_dist)
+
             if front_free:
                 if not left_free and not right_free:
+                    # print("front, not left, not right")
                     go_straight()
                 else:
-                    turn_randomly(left=left_free,
+                    # print("front, left, right")
+                    turn_randomly(left_dist + right_dist, left=left_free,
                                   front=front_free, right=right_free)
             else:
                 if not left_free and not right_free:
+                    # print("not front, not left, not right")
                     stop()
                 elif left_free and not right_free:
+                    # print("not frotn, left, not right")
                     turn_left()
                 elif right_free and not left_free:
+                    # print("not front, not left, right")
                     turn_right()
                 elif left_free and right_free:
-                    turn_randomly(left=left_free,
+                    # print("not front, left, right")
+                    turn_randomly(left_dist + right_dist, left=left_free,
                                   front=front_free, right=right_free)
 
             time.sleep(0.05)
