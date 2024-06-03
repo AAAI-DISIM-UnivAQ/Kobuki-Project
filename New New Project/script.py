@@ -2,7 +2,6 @@ from coppeliasim_zmqremoteapi_client import RemoteAPIClient
 import random
 import time
 import math
-import sys
 
 
 def normalize_angle(angle):
@@ -44,7 +43,7 @@ def turn_right():
 def go_straight():
     sim.setJointTargetVelocity(left_wheel_handle, base_speed)
     sim.setJointTargetVelocity(right_wheel_handle, base_speed)
-    # print("Continuing straight")
+    print("Continuing straight")
 
 
 def stop():
