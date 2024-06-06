@@ -34,7 +34,7 @@ def normal_go_straight():
 
 
 def turn_randomly(front, left, right):
-    time.sleep(1.5)
+    time.sleep(1.9)
     sim.setJointTargetVelocity(left_wheel_handle, 0)
     sim.setJointTargetVelocity(right_wheel_handle, 0)
     options = []
@@ -54,8 +54,8 @@ def turn_randomly(front, left, right):
         print("Left")
     elif direction == "Front":
         print("Front")
-        # normal_go_straight()
-        # time.sleep(1.5)
+        normal_go_straight()
+        time.sleep(1.5)
 
     # sim.stopSimulation()
 
@@ -68,6 +68,15 @@ def turn_right():
     print("target", target_angle)
     set_robot_orientation(target_angle)
     normal_go_straight()
+    time.sleep(1.5)
+
+
+def turn_left():
+    target_angle = - math.pi / 2
+    print("target", target_angle)
+    set_robot_orientation(target_angle)
+    normal_go_straight()
+    time.sleep(1.5)
 
 
 def set_robot_orientation(target_angle):
