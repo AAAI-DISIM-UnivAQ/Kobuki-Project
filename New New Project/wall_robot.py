@@ -4,6 +4,11 @@ import time
 import math
 
 
+def set_speeds(left_speed, right_speed):
+    sim.setJointTargetVelocity(left_wheel_handle, left_speed)
+    sim.setJointTargetVelocity(right_wheel_handle, right_speed)
+
+
 def get_distance(sensor):
     _, dist, _, _, _ = sim.readProximitySensor(sensor)
     return dist
@@ -24,19 +29,17 @@ def go_straight(left_dist, front_dist):
     adjustment = kp * error
     left_speed = base_speed - adjustment
     right_speed = base_speed + adjustment
-    sim.setJointTargetVelocity(left_wheel_handle, left_speed)
-    sim.setJointTargetVelocity(right_wheel_handle, right_speed)
+    set_speeds(left_speed, right_speed)
 
 
 def normal_go_straight():
-    sim.setJointTargetVelocity(left_wheel_handle, base_speed)
-    sim.setJointTargetVelocity(right_wheel_handle, base_speed)
+    set_speeds(base_speed, base_speed)
 
 
 def turn_randomly(front, left, right):
     time.sleep(1.9)
-    sim.setJointTargetVelocity(left_wheel_handle, 0)
-    sim.setJointTargetVelocity(right_wheel_handle, 0)
+    set_speeds(0, 0)
+
     options = []
     if front:
         options.append("Front")
@@ -87,17 +90,14 @@ def set_robot_orientation(target_angle):
         print("current", current_angle)
         print("diff", abs(target_angle - abs(current_angle)))
         if target_angle > current_angle:
-            sim.setJointTargetVelocity(left_wheel_handle, turn_speed)
-            sim.setJointTargetVelocity(right_wheel_handle, -turn_speed)
+            set_speeds(turn_speed, -turn_speed)
         else:
-            sim.setJointTargetVelocity(left_wheel_handle, -turn_speed)
-            sim.setJointTargetVelocity(right_wheel_handle, turn_speed)
+            set_speeds(-turn_speed, turn_speed)
         current_angle = get_robot_orientation()
         time.sleep(0.01)  # Piccola pausa per evitare un loop troppo veloce
 
     # Ferma il robot dopo aver raggiunto l'angolo desiderato
-    sim.setJointTargetVelocity(left_wheel_handle, 0)
-    sim.setJointTargetVelocity(right_wheel_handle, 0)
+    set_speeds(0, 0)
 
 
 if __name__ == "__main__":
@@ -119,8 +119,7 @@ if __name__ == "__main__":
     angle_tolerance = 0.01  # Tolleranza per considerare l'angolo raggiunto
 
     sim.startSimulation()
-    sim.setJointTargetVelocity(left_wheel_handle, base_speed)
-    sim.setJointTargetVelocity(right_wheel_handle, base_speed)
+    set_speeds(base_speed, base_speed)
     # time.sleep(0.5)
 
     # LEFT_DIST = get_distance(left)
@@ -147,8 +146,3 @@ if __name__ == "__main__":
 
     finally:
         sim.stopSimulation()
-
-
-
-
-
