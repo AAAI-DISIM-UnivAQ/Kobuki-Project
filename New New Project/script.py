@@ -42,13 +42,11 @@ def turn_randomly(front, left, right):
 
     options = []
     if front:
-        # options.append("Front")
-        pass
+        options.append("Front")
     if left:
         options.append("Left")
     if right:
         options.append("Right")
-        # pass
     direction = random.choice(options)
 
     if direction == "Right":
@@ -60,31 +58,34 @@ def turn_randomly(front, left, right):
     elif direction == "Front":
         print("Front")
         normal_go_straight()
-        # time.sleep(1.5)
+        time.sleep(1.5)
 
 
 def turn_right():
     target_angle = math.pi / 2
     set_robot_orientation(target_angle)
     normal_go_straight()
-    # time.sleep(1.5)
+    time.sleep(1.5)
 
 
 def turn_left():
     target_angle = -math.pi / 2
     set_robot_orientation(target_angle)
     normal_go_straight()
-    # time.sleep(1.5)
+    time.sleep(1.5)
 
 
 def set_robot_orientation(target_angle):
     current_angle = get_robot_orientation()
 
-    while abs(target_angle - abs(current_angle)) > angle_tolerance:
+    while abs(target_angle - current_angle) > angle_tolerance:
         if target_angle > current_angle:
             set_speeds(turn_speed, -turn_speed)
-        else:
+        elif target_angle < current_angle:
             set_speeds(-turn_speed, turn_speed)
+        else:
+            set_speeds(0, 0)
+
         current_angle = get_robot_orientation()
         time.sleep(0.01)  # Piccola pausa per evitare un loop troppo veloce
 
@@ -127,7 +128,7 @@ if __name__ == "__main__":
                 if not left_free and not right_free:
                     normal_go_straight()
                 else:
-                    turn_randomly(front_free, left_free, right_free)
+                    turn_randomly(False, left_free, right_free)
             else:
                 set_speeds(0, 0)
 
