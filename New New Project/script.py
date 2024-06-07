@@ -4,123 +4,9 @@ import time
 import math
 
 
-def normalize_angle(angle):
-    return math.atan2(math.sin(angle), math.cos(angle))
-
-
-def turn_left():
-    initial_angle = sim.getObjectOrientation(robot_handle, -1)[2]
-    target_angle = normalize_angle(initial_angle + math.pi / 2)
-    angle = False
-
-    while not angle:
-        current_angle = sim.getObjectOrientation(robot_handle, -1)[2]
-        current_angle = normalize_angle(current_angle)
-        angle = abs(normalize_angle(current_angle - target_angle)) <= 0.01
-
-        sim.setJointTargetVelocity(left_wheel_handle, -turn_speed)
-        sim.setJointTargetVelocity(right_wheel_handle, turn_speed)
-        print("Turning left...")
-        time.sleep(0.05)
-
-
-def turn_right():
-    initial_angle = sim.getObjectOrientation(robot_handle, -1)[2]
-    target_angle = normalize_angle(initial_angle - math.pi / 2)
-    angle = False
-
-    while not angle:
-        current_angle = sim.getObjectOrientation(robot_handle, -1)[2]
-        current_angle = normalize_angle(current_angle)
-        angle = abs(normalize_angle(current_angle - target_angle)) <= 0.01
-
-        sim.setJointTargetVelocity(left_wheel_handle, turn_speed)
-        sim.setJointTargetVelocity(right_wheel_handle, -turn_speed)
-        print("Turning right...")
-        time.sleep(0.05)
-
-
-def go_straight():
-    sim.setJointTargetVelocity(left_wheel_handle, base_speed)
-    sim.setJointTargetVelocity(right_wheel_handle, base_speed)
-
-
-def stop():
-    sim.setJointTargetVelocity(left_wheel_handle, 0)
-    sim.setJointTargetVelocity(right_wheel_handle, 0)
-    # print("Stopping")
-
-
-def turn_randomly(left, right, front):
-    print("Intersection detected, choosing direction...")
-    sim.setJointTargetVelocity(left_wheel_handle, base_speed)
-    sim.setJointTargetVelocity(right_wheel_handle, base_speed)
-    time.sleep(DIST / base_speed)
-
-    options = []
-    if front:
-        options.append("Front")
-    if left:
-        options.append("Left")
-    if right:
-        options.append("Right")
-
-    if options:  # Se ci sono opzioni disponibili
-        direction = random.choice(options)
-
-        if direction == "Right":
-            turn_right()
-        elif direction == "Left":
-            turn_left()
-        elif direction == "Front":
-            go_straight()
-    else:
-        print("Unexpected Error, Stopping.")
-        stop()
-
-
-def stay_in_center(left, right):
-    kp = 0.5
-    kd = 0.1
-    threshold = 0.1
-    base_speed = 1.0
-
-    previous_error = 0.0
-
-    while True:
-        error = left - right
-        derivative = error - previous_error
-
-        # Calcolare la correzione con controllo PD
-        correction = kp * error + kd * derivative
-
-        # Applicare la correzione solo se l'errore è sopra la soglia
-        if abs(error) > threshold:
-            if error > 0:
-                # Correzione a sinistra
-                sim.setJointTargetVelocity(
-                    left_wheel_handle, base_speed - correction)
-                sim.setJointTargetVelocity(
-                    right_wheel_handle, base_speed + correction)
-                print("Correzione a sinistra")
-            else:
-                # Correzione a destra
-                sim.setJointTargetVelocity(
-                    left_wheel_handle, base_speed + correction)
-                sim.setJointTargetVelocity(
-                    right_wheel_handle, base_speed - correction)
-                print("Correzione a destra")
-        else:
-            # Procedere dritto se l'errore è sotto la soglia
-            sim.setJointTargetVelocity(left_wheel_handle, base_speed)
-            sim.setJointTargetVelocity(right_wheel_handle, base_speed)
-            print("Procedo dritto")
-
-            # Aggiungere un breve ritardo per stabilizzare il movimento
-            time.sleep(0.5)
-
-        # Aggiornare l'errore precedente
-        previous_error = error
+def set_speeds(left_speed, right_speed):
+    sim.setJointTargetVelocity(left_wheel_handle, left_speed)
+    sim.setJointTargetVelocity(right_wheel_handle, right_speed)
 
 
 def get_distance(sensor):
@@ -131,6 +17,79 @@ def get_distance(sensor):
 def is_free(sensor):
     _, dist, _, _, _ = sim.readProximitySensor(sensor)
     return dist == 0 or dist > MIN_DISTANCE
+
+
+def get_robot_orientation():
+    orientation = sim.getObjectOrientation(robot_handle, -1)
+    return orientation[2]  # Restituisce l'angolo gamma
+
+
+def go_straight(left_dist, front_dist):
+    error = front_dist - left_dist
+    adjustment = kp * error
+    left_speed = base_speed - adjustment
+    right_speed = base_speed + adjustment
+    set_speeds(left_speed, right_speed)
+
+
+def normal_go_straight():
+    set_speeds(base_speed, base_speed)
+
+
+def turn_randomly(front, left, right):
+    time.sleep(1.9)
+    set_speeds(0, 0)
+
+    options = []
+    if front:
+        # options.append("Front")
+        pass
+    if left:
+        options.append("Left")
+    if right:
+        options.append("Right")
+        # pass
+    direction = random.choice(options)
+
+    if direction == "Right":
+        turn_right()
+        print("Right")
+    elif direction == "Left":
+        turn_left()
+        print("Left")
+    elif direction == "Front":
+        print("Front")
+        normal_go_straight()
+        # time.sleep(1.5)
+
+
+def turn_right():
+    target_angle = math.pi / 2
+    set_robot_orientation(target_angle)
+    normal_go_straight()
+    # time.sleep(1.5)
+
+
+def turn_left():
+    target_angle = -math.pi / 2
+    set_robot_orientation(target_angle)
+    normal_go_straight()
+    # time.sleep(1.5)
+
+
+def set_robot_orientation(target_angle):
+    current_angle = get_robot_orientation()
+
+    while abs(target_angle - abs(current_angle)) > angle_tolerance:
+        if target_angle > current_angle:
+            set_speeds(turn_speed, -turn_speed)
+        else:
+            set_speeds(-turn_speed, turn_speed)
+        current_angle = get_robot_orientation()
+        time.sleep(0.01)  # Piccola pausa per evitare un loop troppo veloce
+
+    # Ferma il robot dopo aver raggiunto l'angolo desiderato
+    set_speeds(0, 0)
 
 
 if __name__ == "__main__":
@@ -145,59 +104,34 @@ if __name__ == "__main__":
     front = sim.getObjectHandle("/ultrasonicSensor[4]")
     right = sim.getObjectHandle("/ultrasonicSensor[7]")
 
-    base_speed = 1.0
+    base_speed = 2.0
     turn_speed = 0.3
     MIN_DISTANCE = 0.4
+    kp = 1.0
+    angle_tolerance = 0.01  # Tolleranza per considerare l'angolo raggiunto
 
     sim.startSimulation()
-    sim.setJointTargetVelocity(left_wheel_handle, base_speed)
-    sim.setJointTargetVelocity(right_wheel_handle, base_speed)
-    time.sleep(0.5)
-
-    LEFT_DIST = get_distance(left)
-    RIGHT_DIST = get_distance(right)
-    ROBOT_X = 0.51901
-    ROBOT_Y = 0.415
-    DIST = LEFT_DIST + RIGHT_DIST + 2 * ROBOT_X + 2 * ROBOT_Y
+    set_speeds(base_speed, base_speed)
+    time.sleep(0.1)
 
     try:
         while True:
+
             front_free = is_free(front)
             left_free = is_free(left)
             right_free = is_free(right)
 
-            front_dist = get_distance(front)
-            left_dist = get_distance(left)
-            right_dist = get_distance(right)
-
-            # stay_in_center(left_dist, right_dist)
+            print(left_free, front_free, right_free)
 
             if front_free:
                 if not left_free and not right_free:
-                    # print("front, not left, not right")
-                    go_straight()
+                    normal_go_straight()
                 else:
-                    # print("front, left, right")
-                    turn_randomly(left=left_free,
-                                  front=front_free, right=right_free)
-
-                    sim.setJointTargetVelocity(left_wheel_handle, base_speed)
-                    sim.setJointTargetVelocity(right_wheel_handle, base_speed)
-                    time.sleep(DIST / base_speed)
+                    turn_randomly(front_free, left_free, right_free)
             else:
-                if not left_free and not right_free:
-                    stop()
-                    print("Nowhere to go, stopping.")
-                else:
-                    # print("not front, left, right")
-                    turn_randomly(left=left_free,
-                                  front=front_free, right=right_free)
+                set_speeds(0, 0)
 
-                    sim.setJointTargetVelocity(left_wheel_handle, base_speed)
-                    sim.setJointTargetVelocity(right_wheel_handle, base_speed)
-                    time.sleep(DIST / base_speed)
-
-            time.sleep(0.05)
+            time.sleep(0.01)
 
     finally:
         sim.stopSimulation()
