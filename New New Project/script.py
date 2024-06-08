@@ -234,18 +234,16 @@ if __name__ == "__main__":
                 if not left_free and not right_free:
                     print("Vado indietro")
                     go_back()
+                elif right_free and not left_free:
+                    print("Giro a destra")
+                    turn_right()
+                elif left_free and not right_free:
+                    print("Giro a sinistra")
+                    turn_left()
+                elif left_free and right_free:
+                    print("Scelgo tra destra e sinistra")
+                    turn_randomly(False, True, True)
 
-                """ 
-                    elif right_free and not left_free:
-                        print("Giro a destra")
-                        turn_right()
-                    elif left_free and not right_free:
-                        print("Giro a sinistra")
-                        turn_left()
-                    elif left_free and right_free:
-                        print("Scelgo tra destra e sinistra")
-                        turn_randomly(False, True, True)
-                """
             time.sleep(0.1)
 
     finally:
