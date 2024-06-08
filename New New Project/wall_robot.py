@@ -25,24 +25,10 @@ def get_robot_orientation():
 
 
 def normalize_angle(angle):
-    """
-    Normalizza l'angolo in modo che sia compreso tra -pi e pi.
-    """
-    while angle > math.pi:
-        angle -= 2 * math.pi
-    while angle < -math.pi:
-        angle += 2 * math.pi
-    print("Normalizzato", angle)
-    return angle
-
-
-def angular_difference(angle1, angle2):
-    """
-    Calcola la differenza tra due angoli, tenendo conto del wrapping.
-    """
-    print("target", angle1, "current", angle2)
-    diff = angle1 - angle2
-    return normalize_angle(diff)
+    normalized_angle = angle % (2 * math.pi)
+    if normalized_angle >= math.pi:
+        normalized_angle -= 2 * math.pi
+    return normalized_angle
 
 
 def go_straight(left_dist, front_dist):
@@ -68,6 +54,7 @@ def turn_randomly(front, left, right):
         options.append("Left")
     if right:
         options.append("Right")
+    print("Opzioni:", str(options))
     direction = random.choice(options)
 
     if direction == "Right":
@@ -90,7 +77,7 @@ def turn_right():
     # target_angle = current_angle + math.pi / 2
     # target_angle = math.pi / 2
     target_angle = find_target_angle("right")
-    print("target", target_angle)
+    # print("target", target_angle)
     set_robot_orientation(target_angle, "right")
     normal_go_straight()
     time.sleep(1.5)
@@ -99,49 +86,52 @@ def turn_right():
 def turn_left():
     # target_angle = math.pi / 2
     target_angle = find_target_angle("left")
-    print("target", target_angle)
+    # print("target", target_angle)
     set_robot_orientation(target_angle, "left")
     normal_go_straight()
     time.sleep(1.5)
 
 
 def set_robot_orientation(target_angle, direction):
-    current_angle = get_robot_orientation()
+    actual_angle = get_robot_orientation()
+    current_angle = normalize_angle(actual_angle)
     # print("current", current_angle)
     # print("diff", abs(target_angle - current_angle))
     # print("abs", abs(target_angle))
     diff = abs(abs(target_angle) - abs(current_angle))
-    # diff = angular_difference(target_angle, current_angle)
-    # print("current", current_angle)
-    print("diff", diff)
-    while abs(diff) > angle_tolerance:
+    # diff = abs((target_angle + math.pi) - (current_angle + math.pi))
+    # print("current", current_angle + math.pi)
+    # print("target", target_angle + math.pi)
+    # print("diff", diff)
+    # while abs(diff) > angle_tolerance:
+    while diff > angle_tolerance:
         # print("abs", abs(target_angle))
-        print("current", current_angle)
-        print("diff", diff)
+        # print("current", current_angle + math.pi)
+        # print("diff", diff)
         # if target_angle > current_angle:
         if direction == 'right' or direction == 'front':
             if diff > 0.8:
-                print("Rotazione normale")
+                # print("Rotazione normale")
                 set_speeds(turn_speed, -turn_speed)
             elif 0.3 < diff < 0.8:
-                print("Rotazione più lenta")
+                # print("Rotazione più lenta")
                 set_speeds(slow_turn_speed, -slow_turn_speed)
             else:
-                print("Rotazione molto lenta")
+                # print("Rotazione molto lenta")
                 set_speeds(more_slow_turn_speed, -more_slow_turn_speed)
         elif direction == 'left':
             if diff > 0.8:
-                print("Rotazione normale")
+                # print("Rotazione normale")
                 set_speeds(-turn_speed, turn_speed)
             elif 0.3 < diff < 0.8:
-                print("Rotazione più lenta")
+                # print("Rotazione più lenta")
                 set_speeds(-slow_turn_speed, slow_turn_speed)
             else:
-                print("Rotazione molto lenta")
+                # print("Rotazione molto lenta")
                 set_speeds(-more_slow_turn_speed, more_slow_turn_speed)
         current_angle = get_robot_orientation()
         diff = abs(abs(target_angle) - abs(current_angle))
-        # diff = angular_difference(target_angle, current_angle)
+        # diff = abs((target_angle + math.pi) - (current_angle + math.pi))
         # time.sleep(0.01)  # Piccola pausa per evitare un loop troppo veloce
 
     # Ferma il robot dopo aver raggiunto l'angolo desiderato
@@ -149,8 +139,9 @@ def set_robot_orientation(target_angle, direction):
 
 
 def find_target_angle(direction):
-    current_angle = get_robot_orientation()
-    print("CURRENT:", current_angle)
+    actual_angle = get_robot_orientation()
+    current_angle = normalize_angle(actual_angle)
+    # print("CURRENT:", current_angle)
     if direction == 'right':
         if -0.3 < current_angle < 0.3:
             return math.pi / 2
@@ -172,7 +163,8 @@ def find_target_angle(direction):
 
 
 def go_back():
-    current_angle = get_robot_orientation()
+    actual_angle = get_robot_orientation()
+    current_angle = normalize_angle(actual_angle)
     target_angle_back = 0
     if -0.3 < current_angle < 0.3:
         target_angle_back = math.pi
@@ -182,7 +174,7 @@ def go_back():
         target_angle_back = 0
     elif 1.2 < current_angle < 1.8:
         target_angle_back = math.pi/2
-    print("target", target_angle_back)
+    # print("target", target_angle_back)
     set_robot_orientation(target_angle_back, "front")
     normal_go_straight()
     time.sleep(1.5)
@@ -222,8 +214,9 @@ if __name__ == "__main__":
             front_dist = get_distance(front)
             left_dist = get_distance(left)
             right_dist = get_distance(right)
-            # print("left", left_dist)
-            # print("right", right_dist)
+            print("left", left_dist)
+            print("right", right_dist)
+            print("front", front_dist)
             front_free = is_free(front)
             left_free = is_free(left)
             right_free = is_free(right)
@@ -234,12 +227,13 @@ if __name__ == "__main__":
                     # go_straight(left_dist, right_dist)
                     normal_go_straight()
                 else:
+                    print("Incrocio")
                     turn_randomly(front_free, left_free, right_free)
             else:
                 if not left_free and not right_free:
                     go_back()
                 else:
-                    print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+                    print("Incrocio T o curva")
                     turn_randomly(front_free, left_free, right_free)
 
     finally:
