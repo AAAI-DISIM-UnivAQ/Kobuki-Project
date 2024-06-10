@@ -19,6 +19,16 @@ def is_free(sensor):
     return dist == 0 or dist > MIN_DISTANCE
 
 
+def get_free():
+    sens_left = sim.getObjectHandle("/ultrasonicSensor[0]")
+    sens_front = sim.getObjectHandle("/ultrasonicSensor[4]")
+    sens_right = sim.getObjectHandle("/ultrasonicSensor[7]")
+    sens_front_free = is_free(sens_front)
+    sens_left_free = is_free(sens_left)
+    sens_right_free = is_free(sens_right)
+    return sens_front_free, sens_left_free, sens_right_free
+
+
 def get_robot_orientation():
     orientation = sim.getObjectOrientation(robot_handle, -1)
     return orientation[2]  # Restituisce l'angolo yaw
@@ -43,16 +53,18 @@ def normal_go_straight():
     set_speeds(base_speed, base_speed)
 
 
-def turn_randomly(front, left, right):
+# def turn_randomly(front, left, right):
+def turn_randomly():
     time.sleep(1.9)
     set_speeds(0, 0)
+    control_front, control_left, control_right = get_free()
 
     options = []
-    if front:
+    if control_front:
         options.append("Front")
-    if left:
+    if control_left:
         options.append("Left")
-    if right:
+    if control_right:
         options.append("Right")
     print("Opzioni:", str(options))
     direction = random.choice(options)
@@ -77,7 +89,7 @@ def turn_right():
     # target_angle = current_angle + math.pi / 2
     # target_angle = math.pi / 2
     target_angle = find_target_angle("right")
-    # print("target", target_angle)
+    print("target", target_angle)
     set_robot_orientation(target_angle, "right")
     normal_go_straight()
     time.sleep(1.5)
@@ -86,7 +98,7 @@ def turn_right():
 def turn_left():
     # target_angle = math.pi / 2
     target_angle = find_target_angle("left")
-    # print("target", target_angle)
+    print("target", target_angle)
     set_robot_orientation(target_angle, "left")
     normal_go_straight()
     time.sleep(1.5)
@@ -95,7 +107,7 @@ def turn_left():
 def set_robot_orientation(target_angle, direction):
     actual_angle = get_robot_orientation()
     current_angle = normalize_angle(actual_angle)
-    # print("current", current_angle)
+    print("current", current_angle)
     # print("diff", abs(target_angle - current_angle))
     # print("abs", abs(target_angle))
     diff = abs(abs(target_angle) - abs(current_angle))
@@ -148,7 +160,7 @@ def find_target_angle(direction):
         elif -1.8 < current_angle < -1.2:
             return math.pi
         elif current_angle < -2.8 or current_angle > 2.8:
-            return - math.pi
+            return - math.pi / 2
         elif 1.2 < current_angle < 1.8:
             return 0
     if direction == 'left':
@@ -157,7 +169,7 @@ def find_target_angle(direction):
         elif -1.8 < current_angle < -1.2:
             return 0
         elif current_angle < -2.8 or current_angle > 2.8:
-            return math.pi
+            return math.pi / 2
         elif 1.2 < current_angle < 1.8:
             return - math.pi
 
@@ -190,15 +202,15 @@ if __name__ == "__main__":
     left_wheel_handle = sim.getObjectHandle("/PioneerP3DX/leftMotor")
     right_wheel_handle = sim.getObjectHandle("/PioneerP3DX/rightMotor")
 
-    left = sim.getObjectHandle("/ultrasonicSensor[0]")
-    front = sim.getObjectHandle("/ultrasonicSensor[4]")
-    right = sim.getObjectHandle("/ultrasonicSensor[7]")
+    # left = sim.getObjectHandle("/ultrasonicSensor[0]")
+    # front = sim.getObjectHandle("/ultrasonicSensor[4]")
+    # right = sim.getObjectHandle("/ultrasonicSensor[7]")
 
     base_speed = 2.0
     turn_speed = 0.3
     slow_turn_speed = 0.2
     more_slow_turn_speed = 0.1
-    MIN_DISTANCE = 0.4
+    MIN_DISTANCE = 0.5
     kp = 1.0
     angle_tolerance = 0.02  # Tolleranza per considerare l'angolo raggiunto
 
@@ -211,15 +223,16 @@ if __name__ == "__main__":
 
     try:
         while True:
-            front_dist = get_distance(front)
-            left_dist = get_distance(left)
-            right_dist = get_distance(right)
-            print("left", left_dist)
-            print("right", right_dist)
-            print("front", front_dist)
-            front_free = is_free(front)
-            left_free = is_free(left)
-            right_free = is_free(right)
+            # front_dist = get_distance(front)
+            # left_dist = get_distance(left)
+            # right_dist = get_distance(right)
+            # print("left", left_dist)
+            # print("right", right_dist)
+            # print("front", front_dist)
+            # front_free = is_free(front)
+            # left_free = is_free(left)
+            # right_free = is_free(right)
+            front_free, left_free, right_free = get_free()
             # print("front", front_free, "left", left_free, "right", right_free)
 
             if front_free:
@@ -228,13 +241,16 @@ if __name__ == "__main__":
                     normal_go_straight()
                 else:
                     print("Incrocio")
-                    turn_randomly(front_free, left_free, right_free)
+                    # turn_randomly(front_free, left_free, right_free)
+                    turn_randomly()
             else:
                 if not left_free and not right_free:
+                    print("Vicolo cieco")
                     go_back()
                 else:
                     print("Incrocio T o curva")
-                    turn_randomly(front_free, left_free, right_free)
+                    # turn_randomly(front_free, left_free, right_free)
+                    turn_randomly()
 
     finally:
         sim.stopSimulation()
