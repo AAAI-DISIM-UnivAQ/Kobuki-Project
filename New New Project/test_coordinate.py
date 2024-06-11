@@ -190,20 +190,23 @@ class CoordinatesDS:
         self.id += 1
 
     def moving(self):
-        angle = math.degrees(normalize_angle(get_robot_orientation()))
-        norm_45 = normalize_angle(45)
-        norm_135 = normalize_angle(135)
+        angle = math.degrees(normalize_angle(
+            get_robot_orientation()))
+        norm_45 = normalize_angle(math.radians(45))
+        norm_135 = normalize_angle(math.radians(135))
 
-        if -norm_45 <= angle < norm_45:
-            self._prev = "front"
-        elif norm_45 <= angle < norm_135:
-            self._prev = "right"
-        elif -norm_135 <= angle < -norm_45:
-            self._prev = "left"
+        angle_tolerance2 = 5
+
+        if -norm_45 - angle_tolerance2 < angle <= norm_45 + angle_tolerance2:
+            self._prev = "nord"
+        elif norm_45 + angle_tolerance2 < angle <= norm_135 + angle_tolerance2:
+            self._prev = "est"
+        elif -norm_135 - angle_tolerance2 < angle <= -norm_45 - angle_tolerance2:
+            self._prev = "ovest"
         else:
-            self._prev = "back"
+            self._prev = "sud"
 
-        if self._prev == "front":
+        if self._prev == "nord":
             match self._direction:
                 case "front":
                     self._y += 1
@@ -213,7 +216,7 @@ class CoordinatesDS:
                     self._y -= 1
                 case "left":
                     self._x -= 1
-        elif self._prev == "right":
+        elif self._prev == "est":
             match self._direction:
                 case "front":
                     self._x += 1
@@ -223,7 +226,7 @@ class CoordinatesDS:
                     self._x -= 1
                 case "left":
                     self._y += 1
-        elif self._prev == "back":
+        elif self._prev == "sud":
             match self._direction:
                 case "front":
                     self._y -= 1
@@ -233,7 +236,7 @@ class CoordinatesDS:
                     self._x += 1
                 case "back":
                     self._y += 1
-        elif self._prev == "left":
+        elif self._prev == "ovest":
             match self._direction:
                 case "front":
                     self._y -= 1
