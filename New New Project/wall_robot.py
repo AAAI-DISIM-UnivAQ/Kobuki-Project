@@ -41,15 +41,7 @@ def normalize_angle(angle):
     return normalized_angle
 
 
-def go_straight(left_dist, front_dist):
-    error = front_dist - left_dist
-    adjustment = kp * error
-    left_speed = base_speed - adjustment
-    right_speed = base_speed + adjustment
-    set_speeds(left_speed, right_speed)
-
-
-def normal_go_straight():
+def go_straight():
     set_speeds(base_speed, base_speed)
 
 
@@ -66,18 +58,18 @@ def turn_randomly():
         options.append("Left")
     if control_right:
         options.append("Right")
-    print("Opzioni:", str(options))
+    # print("Opzioni:", str(options))
     direction = random.choice(options)
 
     if direction == "Right":
-        print("Right")
+        # print("Right")
         turn_right()
     elif direction == "Left":
-        print("Left")
+        # print("Left")
         turn_left()
     elif direction == "Front":
-        print("Front")
-        normal_go_straight()
+        # print("Front")
+        go_straight()
         time.sleep(1.5)
 
     # sim.stopSimulation()
@@ -89,28 +81,31 @@ def turn_right():
     # target_angle = current_angle + math.pi / 2
     # target_angle = math.pi / 2
     target_angle = find_target_angle("right")
-    print("target", target_angle)
+    # print("target", target_angle)
     set_robot_orientation(target_angle, "right")
-    normal_go_straight()
-    time.sleep(1.5)
+    go_straight()
+    time.sleep(1.7)
 
 
 def turn_left():
     # target_angle = math.pi / 2
     target_angle = find_target_angle("left")
-    print("target", target_angle)
+    # print("target", target_angle)
     set_robot_orientation(target_angle, "left")
-    normal_go_straight()
-    time.sleep(1.5)
+    go_straight()
+    time.sleep(1.7)
 
 
 def set_robot_orientation(target_angle, direction):
     actual_angle = get_robot_orientation()
     current_angle = normalize_angle(actual_angle)
-    print("current", current_angle)
+    # print("current", current_angle)
     # print("diff", abs(target_angle - current_angle))
     # print("abs", abs(target_angle))
-    diff = abs(abs(target_angle) - abs(current_angle))
+    if direction == "front":
+        diff = abs(target_angle - current_angle)
+    else:
+        diff = abs(abs(target_angle) - abs(current_angle))
     # diff = abs((target_angle + math.pi) - (current_angle + math.pi))
     # print("current", current_angle + math.pi)
     # print("target", target_angle + math.pi)
@@ -142,7 +137,10 @@ def set_robot_orientation(target_angle, direction):
                 # print("Rotazione molto lenta")
                 set_speeds(-more_slow_turn_speed, more_slow_turn_speed)
         current_angle = get_robot_orientation()
-        diff = abs(abs(target_angle) - abs(current_angle))
+        if direction == "front":
+            diff = abs(target_angle - current_angle)
+        else:
+            diff = abs(abs(target_angle) - abs(current_angle))
         # diff = abs((target_angle + math.pi) - (current_angle + math.pi))
         # time.sleep(0.01)  # Piccola pausa per evitare un loop troppo veloce
 
@@ -177,21 +175,41 @@ def find_target_angle(direction):
 def go_back():
     actual_angle = get_robot_orientation()
     current_angle = normalize_angle(actual_angle)
+    # print("CURRENT:", current_angle)
     target_angle_back = 0
     if -0.3 < current_angle < 0.3:
         target_angle_back = math.pi
     elif -1.8 < current_angle < -1.2:
-        target_angle_back = - math.pi / 2
+        target_angle_back = math.pi / 2
     elif current_angle < -2.8 or current_angle > 2.8:
         target_angle_back = 0
     elif 1.2 < current_angle < 1.8:
-        target_angle_back = math.pi/2
+        target_angle_back = - math.pi/2
     # print("target", target_angle_back)
     set_robot_orientation(target_angle_back, "front")
-    normal_go_straight()
+    go_straight()
     time.sleep(1.5)
 
 
+class Coordinates:
+    _x: int
+    _y: int
+
+    def __init__(self):
+        self._x = 0
+        self._y = 0
+
+    def move(self):
+        actual_angle = get_robot_orientation()
+        current_angle = normalize_angle(actual_angle)
+        if -0.3 < current_angle < 0.3:
+            self._y += 1
+        elif -1.8 < current_angle < -1.2:
+            self._x += 1
+        elif current_angle < -2.8 or current_angle > 2.8:
+            self._y -= 1
+        elif 1.2 < current_angle < 1.8:
+            self._x -= 1
 
 
 if __name__ == "__main__":
@@ -221,8 +239,13 @@ if __name__ == "__main__":
     # LEFT_DIST = get_distance(left)
     # RIGHT_DIST = get_distance(right)
 
+    coord = Coordinates()
+    crossroads = []
+
     try:
         while True:
+            coord.move()
+            print("X: " + str(coord._x), "Y: " + str(coord._y))
             # front_dist = get_distance(front)
             # left_dist = get_distance(left)
             # right_dist = get_distance(right)
@@ -238,19 +261,21 @@ if __name__ == "__main__":
             if front_free:
                 if not left_free and not right_free:
                     # go_straight(left_dist, right_dist)
-                    normal_go_straight()
+                    go_straight()
                 else:
                     print("Incrocio")
+                    print("Incroci incontrati:", str(crossroads))
                     # turn_randomly(front_free, left_free, right_free)
+                    crossroads.append((coord._x, coord._y))
                     turn_randomly()
             else:
                 if not left_free and not right_free:
                     print("Vicolo cieco")
                     go_back()
-                else:
-                    print("Incrocio T o curva")
+                # else:
+                    # print("Incrocio T o curva")
                     # turn_randomly(front_free, left_free, right_free)
-                    turn_randomly()
+                    # turn_randomly()
 
     finally:
         sim.stopSimulation()
