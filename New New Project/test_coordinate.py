@@ -195,7 +195,7 @@ class CoordinatesDS:
         norm_45 = normalize_angle(math.radians(45))
         norm_135 = normalize_angle(math.radians(135))
 
-        angle_tolerance2 = 5
+        angle_tolerance2 = 1.5
 
         if -norm_45 - angle_tolerance2 < angle <= norm_45 + angle_tolerance2:
             self._prev = "nord"
