@@ -41,20 +41,13 @@ def normalize_angle(angle):
     return normalized_angle
 
 
-def go_straight(left_dist, front_dist):
-    error = front_dist - left_dist
-    adjustment = kp * error
-    left_speed = base_speed - adjustment
-    right_speed = base_speed + adjustment
-    set_speeds(left_speed, right_speed)
-
-
-def normal_go_straight():
+def go_straight():
     set_speeds(base_speed, base_speed)
 
 
 def turn_randomly():
     time.sleep(1.9)
+    coord.change_coordinates(14)
     set_speeds(0, 0)
     control_front, control_left, control_right = get_free()
 
@@ -65,44 +58,41 @@ def turn_randomly():
         options.append("Left")
     if control_right:
         options.append("Right")
-    print("Opzioni:", str(options))
     direction = random.choice(options)
 
     if direction == "Right":
-        print("Right")
         turn_right()
     elif direction == "Left":
-        print("Left")
         turn_left()
     elif direction == "Front":
-        print("Front")
-        normal_go_straight()
+        go_straight()
         time.sleep(1.5)
+        coord.change_coordinates(11)
 
 
 def turn_right():
     target_angle = find_target_angle("right")
-    print("target", target_angle)
     set_robot_orientation(target_angle, "right")
-    normal_go_straight()
-    coordinates.set_direction("right")
-    time.sleep(1.5)
+    go_straight()
+    time.sleep(1.7)
+    coord.change_coordinates(13)
 
 
 def turn_left():
     target_angle = find_target_angle("left")
-    print("target", target_angle)
     set_robot_orientation(target_angle, "left")
-    normal_go_straight()
-    coordinates.set_direction("left")
-    time.sleep(1.5)
+    go_straight()
+    time.sleep(1.7)
+    coord.change_coordinates(13)
 
 
 def set_robot_orientation(target_angle, direction):
     actual_angle = get_robot_orientation()
     current_angle = normalize_angle(actual_angle)
-    print("current", current_angle)
-    diff = abs(abs(target_angle) - abs(current_angle))
+    if direction == "front":
+        diff = abs(target_angle - current_angle)
+    else:
+        diff = abs(abs(target_angle) - abs(current_angle))
     while diff > angle_tolerance:
         if direction == 'right' or direction == 'front':
             if diff > 0.8:
@@ -110,16 +100,19 @@ def set_robot_orientation(target_angle, direction):
             elif 0.3 < diff < 0.8:
                 set_speeds(slow_turn_speed, -slow_turn_speed)
             else:
-                set_speeds(slower_turn_speed, -slower_turn_speed)
+                set_speeds(more_slow_turn_speed, -more_slow_turn_speed)
         elif direction == 'left':
             if diff > 0.8:
                 set_speeds(-turn_speed, turn_speed)
             elif 0.3 < diff < 0.8:
                 set_speeds(-slow_turn_speed, slow_turn_speed)
             else:
-                set_speeds(-slower_turn_speed, slower_turn_speed)
+                set_speeds(-more_slow_turn_speed, more_slow_turn_speed)
         current_angle = get_robot_orientation()
-        diff = abs(abs(target_angle) - abs(current_angle))
+        if direction == "front":
+            diff = abs(target_angle - current_angle)
+        else:
+            diff = abs(abs(target_angle) - abs(current_angle))
 
 
 def find_target_angle(direction):
@@ -152,100 +145,39 @@ def go_back():
     if -0.3 < current_angle < 0.3:
         target_angle_back = math.pi
     elif -1.8 < current_angle < -1.2:
-        target_angle_back = - math.pi / 2
+        target_angle_back = math.pi / 2
     elif current_angle < -2.8 or current_angle > 2.8:
         target_angle_back = 0
     elif 1.2 < current_angle < 1.8:
-        target_angle_back = math.pi/2
+        target_angle_back = - math.pi/2
     set_robot_orientation(target_angle_back, "front")
-    normal_go_straight()
-    coordinates.set_direction("back")
+    go_straight()
     time.sleep(1.5)
 
 
-crossroads = []
-
-
-class CoordinatesDS:
-
+class Coordinates:
     _x: int
     _y: int
-    _prev: str
-    _direction: str
-    _id: int
 
-    def __init__(self, direction):
+    def __init__(self):
         self._x = 0
         self._y = 0
-        self._direction = direction
-        self._id = 0
 
-    def set_direction(self, direction):
-        tmp = self._direction
-        self._direction = direction
-        self._prev = tmp
+    def change_coordinates(self, d):
+        actual_angle = get_robot_orientation()
+        current_angle = normalize_angle(actual_angle)
 
-    def save_crossroad(self):
-        crossroads.append({self.id, (self._x, self._y)})
-        self.id += 1
+        if -0.3 < current_angle < 0.3:
+            self._y += d
+        elif -1.8 < current_angle < -1.2:
+            self._x += d
+        elif current_angle < -2.8 or current_angle > 2.8:
+            self._y -= d
+        elif 1.2 < current_angle < 1.8:
+            self._x -= d
 
-    def moving(self):
-        angle = math.degrees(normalize_angle(
-            get_robot_orientation()))
-        norm_45 = normalize_angle(math.radians(45))
-        norm_135 = normalize_angle(math.radians(135))
-
-        angle_tolerance2 = 1.5
-
-        if -norm_45 - angle_tolerance2 < angle <= norm_45 + angle_tolerance2:
-            self._prev = "nord"
-        elif norm_45 + angle_tolerance2 < angle <= norm_135 + angle_tolerance2:
-            self._prev = "est"
-        elif -norm_135 - angle_tolerance2 < angle <= -norm_45 - angle_tolerance2:
-            self._prev = "ovest"
-        else:
-            self._prev = "sud"
-
-        if self._prev == "nord":
-            match self._direction:
-                case "front":
-                    self._y += 1
-                case "right":
-                    self._x += 1
-                case "back":
-                    self._y -= 1
-                case "left":
-                    self._x -= 1
-        elif self._prev == "est":
-            match self._direction:
-                case "front":
-                    self._x += 1
-                case "right":
-                    self._y -= 1
-                case "back":
-                    self._x -= 1
-                case "left":
-                    self._y += 1
-        elif self._prev == "sud":
-            match self._direction:
-                case "front":
-                    self._y -= 1
-                case "right":
-                    self._x -= 1
-                case "left":
-                    self._x += 1
-                case "back":
-                    self._y += 1
-        elif self._prev == "ovest":
-            match self._direction:
-                case "front":
-                    self._y -= 1
-                case "right":
-                    self._y += 1
-                case "back":
-                    self._x += 1
-                case "left":
-                    self._y -= 1
+    def move(self):
+        self.change_coordinates(1)
 
 
 if __name__ == "__main__":
@@ -259,7 +191,7 @@ if __name__ == "__main__":
     base_speed = 2.0
     turn_speed = 0.3
     slow_turn_speed = 0.2
-    slower_turn_speed = 0.1
+    more_slow_turn_speed = 0.1
     MIN_DISTANCE = 0.5
     kp = 1.0
     angle_tolerance = 0.02  # Tolleranza per considerare l'angolo raggiunto
@@ -267,30 +199,27 @@ if __name__ == "__main__":
     sim.startSimulation()
     set_speeds(base_speed, base_speed)
 
-    coordinates = CoordinatesDS("front")
+    coord = Coordinates()
+    crossroads = []
 
     try:
         while True:
-
-            coordinates.moving()
-            print(coordinates._x, coordinates._y,
-                  coordinates._direction, coordinates._prev)
-
+            coord.move()
+            print("X: " + str(coord._x), "Y: " + str(coord._y))
             front_free, left_free, right_free = get_free()
 
             if front_free:
                 if not left_free and not right_free:
-                    normal_go_straight()
+                    go_straight()
                 else:
                     print("Incrocio")
+                    print("Incroci incontrati:", str(crossroads))
+                    crossroads.append((coord._x, coord._y))
                     turn_randomly()
             else:
                 if not left_free and not right_free:
                     print("Vicolo cieco")
                     go_back()
-                else:
-                    print("Incrocio T o curva")
-                    turn_randomly()
 
     finally:
         sim.stopSimulation()
