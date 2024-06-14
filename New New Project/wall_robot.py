@@ -70,7 +70,8 @@ def turn_randomly():
     elif direction == "Front":
         # print("Front")
         go_straight()
-        time.sleep(1.5)
+        coord.move(30)
+        time.sleep(1.9)
 
     # sim.stopSimulation()
 
@@ -84,7 +85,8 @@ def turn_right():
     # print("target", target_angle)
     set_robot_orientation(target_angle, "right")
     go_straight()
-    time.sleep(1.7)
+    coord.move(30)
+    time.sleep(1.9)
 
 
 def turn_left():
@@ -93,7 +95,8 @@ def turn_left():
     # print("target", target_angle)
     set_robot_orientation(target_angle, "left")
     go_straight()
-    time.sleep(1.7)
+    coord.move(30)
+    time.sleep(1.9)
 
 
 def set_robot_orientation(target_angle, direction):
@@ -188,7 +191,14 @@ def go_back():
     # print("target", target_angle_back)
     set_robot_orientation(target_angle_back, "front")
     go_straight()
-    time.sleep(1.5)
+    # time.sleep(1.7)
+
+
+def is_far_enough(x, y, crossroads, threshold=30):
+    for cx, cy in crossroads:
+        if abs(cx - x) <= threshold and abs(cy - y) <= threshold:
+            return False
+    return True
 
 
 class Coordinates:
@@ -199,17 +209,17 @@ class Coordinates:
         self._x = 0
         self._y = 0
 
-    def move(self):
+    def move(self, d):
         actual_angle = get_robot_orientation()
         current_angle = normalize_angle(actual_angle)
         if -0.3 < current_angle < 0.3:
-            self._y += 1
+            self._y += d
         elif -1.8 < current_angle < -1.2:
-            self._x += 1
+            self._x += d
         elif current_angle < -2.8 or current_angle > 2.8:
-            self._y -= 1
+            self._y -= d
         elif 1.2 < current_angle < 1.8:
-            self._x -= 1
+            self._x -= d
 
 
 if __name__ == "__main__":
@@ -236,6 +246,9 @@ if __name__ == "__main__":
     set_speeds(base_speed, base_speed)
     # time.sleep(0.5)
 
+    # start_time = time.time()
+    # elapsed_time = 0
+
     # LEFT_DIST = get_distance(left)
     # RIGHT_DIST = get_distance(right)
 
@@ -244,7 +257,8 @@ if __name__ == "__main__":
 
     try:
         while True:
-            coord.move()
+        # while elapsed_time < 1.9:
+            coord.move(1)
             print("X: " + str(coord._x), "Y: " + str(coord._y))
             # front_dist = get_distance(front)
             # left_dist = get_distance(left)
@@ -264,9 +278,15 @@ if __name__ == "__main__":
                     go_straight()
                 else:
                     print("Incrocio")
+                    coord.move(30)
+                    if is_far_enough(coord._x, coord._y, crossroads):
+                        print("Nuovo incrocio")
+                        crossroads.append((coord._x, coord._y))
+                    else:
+                        print("Incrocio già incontrato")
                     print("Incroci incontrati:", str(crossroads))
                     # turn_randomly(front_free, left_free, right_free)
-                    crossroads.append((coord._x, coord._y))
+                    # crossroads.append((coord._x, coord._y))
                     turn_randomly()
             else:
                 if not left_free and not right_free:
@@ -276,6 +296,7 @@ if __name__ == "__main__":
                     # print("Incrocio T o curva")
                     # turn_randomly(front_free, left_free, right_free)
                     # turn_randomly()
+            # elapsed_time = time.time() - start_time
 
     finally:
         sim.stopSimulation()
