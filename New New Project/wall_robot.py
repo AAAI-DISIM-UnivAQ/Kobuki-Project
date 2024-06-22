@@ -51,6 +51,15 @@ def turn_randomly():
     set_speeds(0, 0)
     control_front, control_left, control_right = get_free()
 
+    if (control_front + control_left + control_right) >= 2:
+        # INCROCIO
+        cross = find_cross(crossroads, coord)
+        if len(cross.directions) == 0:
+            print("Init directions")
+            cross.initialize_directions(control_front, control_left, control_right)
+        print("Coord: " + str(cross.x) + ", " + str(cross.y))
+        print("Directions: " + str(cross.directions))
+
     options = []
     if control_front:
         options.append("Front")
@@ -195,31 +204,98 @@ def go_back():
 
 
 def is_far_enough(x, y, crossroads, threshold=30):
-    for cx, cy in crossroads:
-        if abs(cx - x) <= threshold and abs(cy - y) <= threshold:
+    for cross in crossroads:
+        if abs(cross.x - x) <= threshold and abs(cross.y - y) <= threshold:
             return False
     return True
 
 
+def find_cross(crossroads_list, coord, threshold=30):
+    for cross in crossroads_list:
+        if abs(cross.x - coord.x) <= threshold and abs(cross.y - coord.y) <= threshold:
+            return cross
+    return None
+
+
 class Coordinates:
-    _x: int
-    _y: int
+    x: int
+    y: int
 
     def __init__(self):
-        self._x = 0
-        self._y = 0
+        self.x = 0
+        self.y = 0
 
     def move(self, d):
         actual_angle = get_robot_orientation()
         current_angle = normalize_angle(actual_angle)
         if -0.3 < current_angle < 0.3:
-            self._y += d
+            self.y += d
         elif -1.8 < current_angle < -1.2:
-            self._x += d
+            self.x += d
         elif current_angle < -2.8 or current_angle > 2.8:
-            self._y -= d
+            self.y -= d
         elif 1.2 < current_angle < 1.8:
-            self._x -= d
+            self.x -= d
+
+
+class Crossroad:
+    x: int
+    y: int
+    coordinates: Coordinates
+    directions: list
+
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.directions = []
+
+    def initialize_directions(self, front, left, right):
+        actual_dir = self.define_direction()
+        if actual_dir == "front":
+            self.directions.append([math.pi, False])
+            if front:
+                self.directions.append([0.0, True])
+            if left:
+                self.directions.append([- math.pi / 2, True])
+            if right:
+                self.directions.append([math.pi / 2, True])
+        elif actual_dir == "right":
+            self.directions.append([- math.pi / 2, False])
+            if front:
+                self.directions.append([math.pi / 2, True])
+            if left:
+                self.directions.append([0.0, True])
+            if right:
+                self.directions.append([math.pi, True])
+        elif actual_dir == "left":
+            self.directions.append([math.pi / 2, False])
+            if front:
+                self.directions.append([- math.pi / 2, True])
+            if left:
+                self.directions.append([math.pi, True])
+            if right:
+                self.directions.append([0.0, True])
+        elif actual_dir == "back":
+            self.directions.append([0.0, False])
+            if front:
+                self.directions.append([math.pi, True])
+            if left:
+                self.directions.append([math.pi / 2, True])
+            if right:
+                self.directions.append([- math.pi / 2, True])
+
+    def define_direction(self):
+        actual_angle = get_robot_orientation()
+        current_angle = normalize_angle(actual_angle)
+        if -0.3 < current_angle < 0.3:
+            return "front"
+        elif -1.8 < current_angle < -1.2:
+            return "right"
+        elif current_angle < -2.8 or current_angle > 2.8:
+            return "back"
+        elif 1.2 < current_angle < 1.8:
+            return "left"
+
 
 
 if __name__ == "__main__":
@@ -253,13 +329,15 @@ if __name__ == "__main__":
     # RIGHT_DIST = get_distance(right)
 
     coord = Coordinates()
+    # cross = Crossroad()
     crossroads = []
 
     try:
         while True:
         # while elapsed_time < 1.9:
             coord.move(1)
-            print("X: " + str(coord._x), "Y: " + str(coord._y))
+            # cross.move(1)
+            print("X: " + str(coord.x), "Y: " + str(coord.y))
             # front_dist = get_distance(front)
             # left_dist = get_distance(left)
             # right_dist = get_distance(right)
@@ -279,9 +357,11 @@ if __name__ == "__main__":
                 else:
                     print("Incrocio")
                     coord.move(30)
-                    if is_far_enough(coord._x, coord._y, crossroads):
+                    # cross.move(30)
+                    if is_far_enough(coord.x, coord.y, crossroads):
                         print("Nuovo incrocio")
-                        crossroads.append((coord._x, coord._y))
+                        # crossroads.append((coord.x, coord.y))
+                        crossroads.append(Crossroad(coord.x, coord.y))
                     else:
                         print("Incrocio già incontrato")
                     print("Incroci incontrati:", str(crossroads))
