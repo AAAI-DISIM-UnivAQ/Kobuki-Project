@@ -54,12 +54,49 @@ def turn_randomly():
     if (control_front + control_left + control_right) >= 2:
         # INCROCIO
         cross = find_cross(crossroads, coord)
+        actual = cross.define_direction()
+        print("actual", actual)
         if len(cross.directions) == 0:
             print("Init directions")
             cross.initialize_directions(control_front, control_left, control_right)
+        else:
+            cross.reverse_direction_status(actual)
         print("Coord: " + str(cross.x) + ", " + str(cross.y))
         print("Directions: " + str(cross.directions))
 
+        options = cross.get_true_directions()
+        print("Available: ", str(options))
+        choice = random.choice(options)
+        print("Choice: " + str(choice))
+        cross.set_direction_status(choice)
+        print("Direction status: " + str(cross.directions))
+        # actual = cross.define_direction()
+        if choice == actual:
+            go_straight()
+            coord.move(30)
+            time.sleep(1.9)
+        elif ((actual == "nord" and choice == "est") or
+              (actual == "sud" and choice == "ovest") or
+              (actual == "est" and choice == "sud") or
+              (actual == "ovest" and choice == "nord")):
+            turn_right()
+        elif ((actual == "nord" and choice == "ovest") or
+              (actual == "sud" and choice == "est") or
+              (actual == "est" and choice == "nord") or
+              (actual == "ovest" and choice == "sud")):
+            turn_left()
+    else:
+        # SVOLTE O BUG
+        if control_front:
+            go_straight()
+            coord.move(30)
+            time.sleep(1.9)
+        elif control_left:
+            turn_left()
+        elif control_right:
+            turn_right()
+
+    """
     options = []
     if control_front:
         options.append("Front")
@@ -83,6 +120,7 @@ def turn_randomly():
         time.sleep(1.9)
 
     # sim.stopSimulation()
+    """
 
 
 def turn_right():
@@ -241,7 +279,7 @@ class Coordinates:
 class Crossroad:
     x: int
     y: int
-    coordinates: Coordinates
+    # coordinates: Coordinates
     directions: list
 
     def __init__(self, x, y):
@@ -251,50 +289,120 @@ class Crossroad:
 
     def initialize_directions(self, front, left, right):
         actual_dir = self.define_direction()
-        if actual_dir == "front":
-            self.directions.append([math.pi, False])
+        if actual_dir == "nord":
+            # self.directions.append([math.pi, False])
+            self.directions.append(["sud", False])
             if front:
-                self.directions.append([0.0, True])
+                # self.directions.append([0.0, True])
+                self.directions.append(["nord", True])
             if left:
-                self.directions.append([- math.pi / 2, True])
+                # self.directions.append([- math.pi / 2, True])
+                self.directions.append(["ovest", True])
             if right:
-                self.directions.append([math.pi / 2, True])
-        elif actual_dir == "right":
-            self.directions.append([- math.pi / 2, False])
+                # self.directions.append([math.pi / 2, True])
+                self.directions.append(["est", True])
+        elif actual_dir == "est":
+            # self.directions.append([- math.pi / 2, False])
+            self.directions.append(["ovest", False])
             if front:
-                self.directions.append([math.pi / 2, True])
+                # self.directions.append([math.pi / 2, True])
+                self.directions.append(["est", True])
             if left:
-                self.directions.append([0.0, True])
+                # self.directions.append([0.0, True])
+                self.directions.append(["nord", True])
             if right:
-                self.directions.append([math.pi, True])
-        elif actual_dir == "left":
-            self.directions.append([math.pi / 2, False])
+                # self.directions.append([math.pi, True])
+                self.directions.append(["sud", True])
+        elif actual_dir == "ovest":
+            # self.directions.append([math.pi / 2, False])
+            self.directions.append(["est", False])
             if front:
-                self.directions.append([- math.pi / 2, True])
+                # self.directions.append([- math.pi / 2, True])
+                self.directions.append(["ovest", True])
             if left:
-                self.directions.append([math.pi, True])
+                # self.directions.append([math.pi, True])
+                self.directions.append(["sud", True])
             if right:
-                self.directions.append([0.0, True])
-        elif actual_dir == "back":
-            self.directions.append([0.0, False])
+                # self.directions.append([0.0, True])
+                self.directions.append(["nord", True])
+        elif actual_dir == "sud":
+            # self.directions.append([0.0, False])
+            self.directions.append(["nord", False])
             if front:
-                self.directions.append([math.pi, True])
+                # self.directions.append([math.pi, True])
+                self.directions.append(["sud", True])
             if left:
-                self.directions.append([math.pi / 2, True])
+                # self.directions.append([math.pi / 2, True])
+                self.directions.append(["est", True])
             if right:
-                self.directions.append([- math.pi / 2, True])
+                # self.directions.append([- math.pi / 2, True])
+                self.directions.append(["ovest", True])
 
     def define_direction(self):
         actual_angle = get_robot_orientation()
         current_angle = normalize_angle(actual_angle)
         if -0.3 < current_angle < 0.3:
-            return "front"
+            return "nord"
         elif -1.8 < current_angle < -1.2:
-            return "right"
+            return "est"
         elif current_angle < -2.8 or current_angle > 2.8:
-            return "back"
+            return "sud"
         elif 1.2 < current_angle < 1.8:
-            return "left"
+            return "ovest"
+
+    def get_true_directions(self):
+        """
+        direction_map = {
+            0.0: "nord",
+            math.pi / 2: "est",
+            math.pi: "sud",
+            -math.pi / 2: "ovest"
+        }
+        return [direction_map[direction[0]] for direction in self.directions if direction[1] is True]
+        """
+        return [direction[0] for direction in self.directions if direction[1] is True]
+
+    def set_direction_status(self, direction_name):
+        """
+        direction_map = {
+            "nord": 0.0,
+            "est": math.pi / 2,
+            "sud": math.pi,
+            "ovest": -math.pi / 2
+        }
+        target_angle = direction_map[direction_name]
+        for direction in self.directions:
+            if direction[0] == target_angle:
+                direction[1] = False
+                break
+        """
+        for direction in self.directions:
+            if direction[0] == direction_name:
+                direction[1] = False
+                break
+
+        self.reset()
+
+    def reset(self):
+        # Controllo se tutte le direzioni sono false
+        if all(direction[1] is False for direction in self.directions):
+            self.directions[0][1] = True
+
+    def reverse_direction_status(self, direction_name):
+        opposite_direction = {
+            "nord": "sud",
+            "est": "ovest",
+            "sud": "nord",
+            "ovest": "est"
+        }
+        if direction_name in opposite_direction:
+            opposite_name = opposite_direction[direction_name]
+            for direction in self.directions:
+                if direction[0] == opposite_name:
+                    direction[1] = False
+                    break
+
+            self.reset()
 
 
 
