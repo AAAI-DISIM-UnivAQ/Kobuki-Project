@@ -17,16 +17,25 @@ class Body:
         self._sim_body.start()
 
     def sense(self, client):
-        vision_values = self._sim_body.sense()
+        # print("Keys in _d_sensors:", self._d_sensors.keys())
+        vision_values, proximity_values, orientation_value = self._sim_body.sense()
+        proximity_counter = 0
         for s in self._d_sensors:
-            self._d_sensors[s] = vision_values[0]
+            if 'Vision_sensor' in s:
+                self._d_sensors[s] = vision_values[0]
+            elif 'ultrasonicSensor' in s:
+                self._d_sensors[s] = proximity_values[proximity_counter]
+                proximity_counter += 1
         for name in self._sensor_array:
             client.publish(f"sense/{name}", str(self._d_sensors[name]))
             print(f"Published data from sensor: {name}")
+        client.publish(f"sense/orientation", str(orientation_value))
+        print(f"Published orientation data")
 
 
 if __name__ == "__main__":
-    my_robot = Body(["Vision_sensor"])
+    my_robot = Body(["Vision_sensor", "ultrasonicSensor[0]", "ultrasonicSensor[4]", "ultrasonicSensor[7]"])
+    print("Keys in _d_sensors:", my_robot._d_sensors.keys())
 
     client_pub = mqtt.Client(
         mqtt.CallbackAPIVersion.VERSION2, reconnect_on_failure=True)

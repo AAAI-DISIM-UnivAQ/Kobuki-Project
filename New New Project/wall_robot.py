@@ -6,14 +6,10 @@ import cv2
 import numpy as np
 import array
 
+
 def set_speeds(left_speed, right_speed):
     sim.setJointTargetVelocity(left_wheel_handle, left_speed)
     sim.setJointTargetVelocity(right_wheel_handle, right_speed)
-
-
-def get_distance(sensor):
-    _, dist, _, _, _ = sim.readProximitySensor(sensor)
-    return dist
 
 
 def is_free(sensor):
@@ -331,14 +327,6 @@ def get_image_from_sensor(sensor_handle):
     else:
         print(f"Failed to capture image from vision sensor.")
         return None
-    # if result == sim.simx_return_ok:
-        # Convert the image to a numpy array
-        # image_byte_array = array.array('b', image)
-        # img_buffer = np.frombuffer(image_byte_array, dtype=np.uint8).reshape(resolution[1], resolution[0], 3)
-        # Flip the image vertically (if needed)
-        # img = cv2.flip(img_buffer, 0)
-        # return img
-
 
 
 if __name__ == "__main__":
@@ -356,7 +344,6 @@ if __name__ == "__main__":
     slow_turn_speed = 0.2
     more_slow_turn_speed = 0.1
     MIN_DISTANCE = 0.5
-    kp = 1.0
     angle_tolerance = 0.02  # Tolleranza per considerare l'angolo raggiunto
 
     sim.startSimulation()

@@ -3,101 +3,81 @@ import array
 import numpy as np
 import cv2
 
-STOP_DISTANCE = -150
-MAX_CORRECTION = 50
+MIN_DISTANCE = 0.5
 
 
 class Perceptor:
     # _old_perception: str
     _my_name: str
     _my_sensors: list
+    _sensor_values: dict
+    # _my_possible_perceptions: list
+    _perception: dict
 
-    # _sensor_values: dict
-
-    def __init__(self, name, sensors, perceptions):
-        assert isinstance(sensors, list) and isinstance(perceptions, list)
+    def __init__(self, name, sensors):
         self._my_sensors = sensors
-        self._my_perceptions = perceptions
+        # self._my_perceptions = perceptions
         self._my_name = name
-        # self._sensor_values = {}
-        # for s in sensors:
-        # self._sensor_values[s] = 0
-        # self._old_perception = "free"
+        self._perception = {}
+        self._sensor_values = {}
+        for s in sensors:
+            self._sensor_values[s] = 0
+        # self._old_perception = "front"
 
-    def percept(self, img, client):
-        road_center_distance = self.get_distance_from_center(img)
-        horizontal_gps = self.get_horiziontal_green_stripes_distance(img)
-        stop = False
-        correction = 0
+        # 0 --> sinistra, 4 --> centro, 7 --> destra.
 
-        if horizontal_gps != -1 and horizontal_gps >= STOP_DISTANCE:
-            print("Horizontal STOP DISTANCE reached")
-            stop = True
-        client.publish(f"perception/hor_distance", stop)
+    def is_free(sensor, dist):
+        return float(dist) == 0 or float(dist) > MIN_DISTANCE
 
-        trajectory_correction = max(-MAX_CORRECTION,
-                                    min(MAX_CORRECTION, road_center_distance))
-        if trajectory_correction != 0:
-            print("Trajectory correction")
-            correction = trajectory_correction
-        client.publish(f"perception/correction", correction)
-
-        # return stop, correction
-
-    def get_distance_from_center(self, img):
-        center_lane_x = self.detect_lane(img)
-
-        # Calcoliamo la distanza del robottino dal centro della carreggiata
-        # La distanza sarà la differenza tra la posizione attuale del robottino e il centro della carreggiata
-        distance_from_center = center_lane_x - img.shape[1] // 2
-
-        return distance_from_center
-
-    def detect_lane(self, img):
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        edges = cv2.Canny(gray, 50, 150)
-        lines = cv2.HoughLinesP(edges, 1, np.pi / 180,
-                                threshold=50, minLineLength=50, maxLineGap=100)
-
-        left_line_x = []
-        right_line_x = []
-
-        if lines is not None:
-            for line in lines:
-                x1, y1, x2, y2 = line[0]
-                slope = (y2 - y1) / (x2 - x1)
-                if slope < 0:
-                    left_line_x.extend([x1, x2])
-                elif slope > 0:
-                    right_line_x.extend([x1, x2])
-
-        if left_line_x and right_line_x:
-            left_line_x_avg = np.average(left_line_x)
-            right_line_x_avg = np.average(right_line_x)
-            center_lane_x = int((left_line_x_avg + right_line_x_avg) / 2)
+    def get_image_from_sensor(self, image, resolution):
+        if image is not None and resolution is not None:
+            img_array = array.array('B', image)
+            img_np = np.array(img_array, dtype=np.uint8)
+            img_np = img_np.reshape((resolution[1], resolution[0], 3))
+            return img_np
         else:
-            # Se non ci sono linee rilevate, assumiamo che il robot si trovi al centro della carreggiata
-            center_lane_x = img.shape[1] // 2
+            print(f"Failed to capture image from vision sensor.")
+            return None
 
-        return center_lane_x
+    def detect_green_object(self, image):
+        # Convert the image to HSV
+        hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        # Define the range for green color in HSV
+        lower_green = np.array([35, 100, 100])
+        upper_green = np.array([85, 255, 255])
+        # Threshold the image to get only green colors
+        mask = cv2.inRange(hsv_image, lower_green, upper_green)
+        # Find contours in the masked image
+        contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        return len(contours) > 0
 
-    def get_horiziontal_green_stripes_distance(self, img):
+    def percept(self, values):
+        for key, value in values.items():
+            if key == "ultrasonicSensor[0]":
+                # free = self.is_free(value)
+                self._perception["left"] = self.is_free(value)
+                print("Sinistra", self.is_free(value))
+            elif key == "ultrasonicSensor[4]":
+                self._perception["front"] = self.is_free(value)
+                print("Centro", self.is_free(value))
+            elif key == "ultrasonicSensor[7]":
+                self._perception["right"] = self.is_free(value)
+                print("Destra", self.is_free(value))
+            elif key == "Vision_sensor":
+                sensor_value = eval(value)
+                image = sensor_value[0]
+                resolution = sensor_value[1]
+                img = self.get_image_from_sensor(image, resolution)
+                if img is not None and self.detect_green_object(img):
+                    print("Oggetto verde rilevato. Interrompendo la simulazione.")
+                    self._perception["green"] = True
+                else:
+                    print("No green")
+                    self._perception["green"] = False
+            elif key == "orientation":
+                print("Orientation", str(value))
+                self._perception["orientation"] = value
 
-        lower_green = np.array([0, 100, 0], dtype=np.uint8)
-        upper_green = np.array([50, 255, 50], dtype=np.uint8)
-
-        green_mask = cv2.inRange(img, lower_green, upper_green)
-
-        contours, _ = cv2.findContours(
-            green_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-        if contours:
-            average_distance = np.mean([cv2.pointPolygonTest(
-                cnt, (img.shape[1] // 2, 0), True) for cnt in contours])
-        else:
-            average_distance = -1
-
-        return average_distance
 
 
 def on_connect(client, userdata, flags, reason_code, properties):
@@ -115,22 +95,12 @@ def on_message(client, userdata, msg):
     sensor_name = msg.topic.split("/")[1]
     message_value = msg.payload.decode("utf-8")
     print("Received")
-    sensor_value = eval(message_value)
+    perceptor._sensor_values[sensor_name] = message_value
 
-    image = sensor_value[0]
-    resolution = sensor_value[1]
+    perceptor.percept(perceptor._sensor_values)
 
-    if image is not None and resolution is not None:
-        img_array = array.array('B', image)
-        img_np = np.array(img_array, dtype=np.uint8)
-        img_np = img_np.reshape((resolution[1], resolution[0], 3))
-
-        percepetor.percept(img_np, client_mqtt)
-        # new_perc = percepetor.percept(img_np)
-        # client_mqtt.publish(f"perception/", str(new_perc))
-
-    else:
-        print("Image not available.")
+    for key, value in perceptor._perception.items():
+        client.publish(f"perception/{key}", str(value))
 
 
 def on_subscribe(client, userdata, mid, reason_code_list, properties):
@@ -141,9 +111,7 @@ def on_subscribe(client, userdata, mid, reason_code_list, properties):
 
 
 if __name__ == "__main__":
-    percepetor = Perceptor("LittleBrain",
-                           sensors=["Vision_sensor"],
-                           perceptions=["free"])
+    perceptor = Perceptor("LittleBrain", sensors=["Vision_sensor"])
 
     client_mqtt = mqtt.Client(
         mqtt.CallbackAPIVersion.VERSION2, reconnect_on_failure=True)

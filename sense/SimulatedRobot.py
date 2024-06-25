@@ -8,6 +8,7 @@ class SimulatedPioneerBody:
     _sim: Any
     _cSim_client: Any
     _my_sensors_values: List
+    _robot_handle: Any
 
     def __init__(self, name: str):
         self._my_name = name
@@ -16,6 +17,7 @@ class SimulatedPioneerBody:
         self._cSim_client = RemoteAPIClient(host=MY_SIM_HOST)
         self._sim = self._cSim_client.require('sim')
         print("Connected to SIM")
+        self._robot_handle = self._sim.getObjectHandle("/PioneerP3DX")
         self._my_sensors_values = []
         front_sensors = [
                    self._sim.getObject("./ultrasonicSensor[0]"),
@@ -63,10 +65,16 @@ class SimulatedPioneerBody:
             values.append((image, resolution))
         return values
 
+    def get_robot_orientation(self):
+        orientation = self._sim.getObjectOrientation(self._robot_handle, -1)
+        return orientation[2]  # Restituisce l'angolo yaw
+
     def sense(self):
         try:
             vision_values = self._read_vision_sensors(2)  # only vision sensors
-            return vision_values
+            front_values = self._read_proximity_sensors(0)  # only front sensors
+            orientation = self.get_robot_orientation()
+            return vision_values, front_values, orientation
         except Exception as e:
             print(e)
 
