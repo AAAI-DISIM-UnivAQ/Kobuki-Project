@@ -2,7 +2,9 @@ from coppeliasim_zmqremoteapi_client import RemoteAPIClient
 import random
 import time
 import math
-
+import cv2
+import numpy as np
+import array
 
 def set_speeds(left_speed, right_speed):
     sim.setJointTargetVelocity(left_wheel_handle, left_speed)
@@ -45,7 +47,6 @@ def go_straight():
     set_speeds(base_speed, base_speed)
 
 
-# def turn_randomly(front, left, right):
 def turn_randomly():
     time.sleep(1.9)
     set_speeds(0, 0)
@@ -70,7 +71,6 @@ def turn_randomly():
         print("Choice: " + str(choice))
         cross.set_direction_status(choice)
         print("Direction status: " + str(cross.directions))
-        # actual = cross.define_direction()
         if choice == actual:
             go_straight()
             coord.move(30)
@@ -96,40 +96,9 @@ def turn_randomly():
         elif control_right:
             turn_right()
 
-    """
-    options = []
-    if control_front:
-        options.append("Front")
-    if control_left:
-        options.append("Left")
-    if control_right:
-        options.append("Right")
-    # print("Opzioni:", str(options))
-    direction = random.choice(options)
-
-    if direction == "Right":
-        # print("Right")
-        turn_right()
-    elif direction == "Left":
-        # print("Left")
-        turn_left()
-    elif direction == "Front":
-        # print("Front")
-        go_straight()
-        coord.move(30)
-        time.sleep(1.9)
-
-    # sim.stopSimulation()
-    """
-
 
 def turn_right():
-    # current_angle = get_robot_orientation()
-    # print("current", current_angle)
-    # target_angle = current_angle + math.pi / 2
-    # target_angle = math.pi / 2
     target_angle = find_target_angle("right")
-    # print("target", target_angle)
     set_robot_orientation(target_angle, "right")
     go_straight()
     coord.move(30)
@@ -137,9 +106,7 @@ def turn_right():
 
 
 def turn_left():
-    # target_angle = math.pi / 2
     target_angle = find_target_angle("left")
-    # print("target", target_angle)
     set_robot_orientation(target_angle, "left")
     go_straight()
     coord.move(30)
@@ -149,59 +116,35 @@ def turn_left():
 def set_robot_orientation(target_angle, direction):
     actual_angle = get_robot_orientation()
     current_angle = normalize_angle(actual_angle)
-    # print("current", current_angle)
-    # print("diff", abs(target_angle - current_angle))
-    # print("abs", abs(target_angle))
     if direction == "front":
         diff = abs(target_angle - current_angle)
     else:
         diff = abs(abs(target_angle) - abs(current_angle))
-    # diff = abs((target_angle + math.pi) - (current_angle + math.pi))
-    # print("current", current_angle + math.pi)
-    # print("target", target_angle + math.pi)
-    # print("diff", diff)
-    # while abs(diff) > angle_tolerance:
     while diff > angle_tolerance:
-        # print("abs", abs(target_angle))
-        # print("current", current_angle + math.pi)
-        # print("diff", diff)
-        # if target_angle > current_angle:
         if direction == 'right' or direction == 'front':
             if diff > 0.8:
-                # print("Rotazione normale")
                 set_speeds(turn_speed, -turn_speed)
             elif 0.3 < diff < 0.8:
-                # print("Rotazione più lenta")
                 set_speeds(slow_turn_speed, -slow_turn_speed)
             else:
-                # print("Rotazione molto lenta")
                 set_speeds(more_slow_turn_speed, -more_slow_turn_speed)
         elif direction == 'left':
             if diff > 0.8:
-                # print("Rotazione normale")
                 set_speeds(-turn_speed, turn_speed)
             elif 0.3 < diff < 0.8:
-                # print("Rotazione più lenta")
                 set_speeds(-slow_turn_speed, slow_turn_speed)
             else:
-                # print("Rotazione molto lenta")
                 set_speeds(-more_slow_turn_speed, more_slow_turn_speed)
         current_angle = get_robot_orientation()
         if direction == "front":
             diff = abs(target_angle - current_angle)
         else:
             diff = abs(abs(target_angle) - abs(current_angle))
-        # diff = abs((target_angle + math.pi) - (current_angle + math.pi))
-        # time.sleep(0.01)  # Piccola pausa per evitare un loop troppo veloce
-
-    # Ferma il robot dopo aver raggiunto l'angolo desiderato
-    # set_speeds(0, 0)
 
 
 def find_target_angle(direction):
     actual_angle = get_robot_orientation()
     current_angle = normalize_angle(actual_angle)
-    # print("CURRENT:", current_angle)
     if direction == 'right':
         if -0.3 < current_angle < 0.3:
             return math.pi / 2
@@ -225,7 +168,6 @@ def find_target_angle(direction):
 def go_back():
     actual_angle = get_robot_orientation()
     current_angle = normalize_angle(actual_angle)
-    # print("CURRENT:", current_angle)
     target_angle_back = 0
     if -0.3 < current_angle < 0.3:
         target_angle_back = math.pi
@@ -234,11 +176,9 @@ def go_back():
     elif current_angle < -2.8 or current_angle > 2.8:
         target_angle_back = 0
     elif 1.2 < current_angle < 1.8:
-        target_angle_back = - math.pi/2
-    # print("target", target_angle_back)
+        target_angle_back = - math.pi / 2
     set_robot_orientation(target_angle_back, "front")
     go_straight()
-    # time.sleep(1.7)
 
 
 def is_far_enough(x, y, crossroads, threshold=30):
@@ -279,7 +219,6 @@ class Coordinates:
 class Crossroad:
     x: int
     y: int
-    # coordinates: Coordinates
     directions: list
 
     def __init__(self, x, y):
@@ -290,52 +229,36 @@ class Crossroad:
     def initialize_directions(self, front, left, right):
         actual_dir = self.define_direction()
         if actual_dir == "nord":
-            # self.directions.append([math.pi, False])
             self.directions.append(["sud", False])
             if front:
-                # self.directions.append([0.0, True])
                 self.directions.append(["nord", True])
             if left:
-                # self.directions.append([- math.pi / 2, True])
                 self.directions.append(["ovest", True])
             if right:
-                # self.directions.append([math.pi / 2, True])
                 self.directions.append(["est", True])
         elif actual_dir == "est":
-            # self.directions.append([- math.pi / 2, False])
             self.directions.append(["ovest", False])
             if front:
-                # self.directions.append([math.pi / 2, True])
                 self.directions.append(["est", True])
             if left:
-                # self.directions.append([0.0, True])
                 self.directions.append(["nord", True])
             if right:
-                # self.directions.append([math.pi, True])
                 self.directions.append(["sud", True])
         elif actual_dir == "ovest":
-            # self.directions.append([math.pi / 2, False])
             self.directions.append(["est", False])
             if front:
-                # self.directions.append([- math.pi / 2, True])
                 self.directions.append(["ovest", True])
             if left:
-                # self.directions.append([math.pi, True])
                 self.directions.append(["sud", True])
             if right:
-                # self.directions.append([0.0, True])
                 self.directions.append(["nord", True])
         elif actual_dir == "sud":
-            # self.directions.append([0.0, False])
             self.directions.append(["nord", False])
             if front:
-                # self.directions.append([math.pi, True])
                 self.directions.append(["sud", True])
             if left:
-                # self.directions.append([math.pi / 2, True])
                 self.directions.append(["est", True])
             if right:
-                # self.directions.append([- math.pi / 2, True])
                 self.directions.append(["ovest", True])
 
     def define_direction(self):
@@ -351,31 +274,9 @@ class Crossroad:
             return "ovest"
 
     def get_true_directions(self):
-        """
-        direction_map = {
-            0.0: "nord",
-            math.pi / 2: "est",
-            math.pi: "sud",
-            -math.pi / 2: "ovest"
-        }
-        return [direction_map[direction[0]] for direction in self.directions if direction[1] is True]
-        """
         return [direction[0] for direction in self.directions if direction[1] is True]
 
     def set_direction_status(self, direction_name):
-        """
-        direction_map = {
-            "nord": 0.0,
-            "est": math.pi / 2,
-            "sud": math.pi,
-            "ovest": -math.pi / 2
-        }
-        target_angle = direction_map[direction_name]
-        for direction in self.directions:
-            if direction[0] == target_angle:
-                direction[1] = False
-                break
-        """
         for direction in self.directions:
             if direction[0] == direction_name:
                 direction[1] = False
@@ -405,6 +306,40 @@ class Crossroad:
             self.reset()
 
 
+def detect_green_object(image):
+    # Convert the image to HSV
+    hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    # Define the range for green color in HSV
+    lower_green = np.array([35, 100, 100])
+    upper_green = np.array([85, 255, 255])
+    # Threshold the image to get only green colors
+    mask = cv2.inRange(hsv_image, lower_green, upper_green)
+    # Find contours in the masked image
+    contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    return len(contours) > 0
+
+
+def get_image_from_sensor(sensor_handle):
+    # Capture the image from the vision sensor
+    # result, resolution, image = sim.getVisionSensorCharImage(sensor_handle)
+    image, resolution = sim.getVisionSensorImg(sensor_handle)
+    if image is not None and resolution is not None:
+        img_array = array.array('B', image)
+        img_np = np.array(img_array, dtype=np.uint8)
+        img_np = img_np.reshape((resolution[1], resolution[0], 3))
+        return img_np
+    else:
+        print(f"Failed to capture image from vision sensor.")
+        return None
+    # if result == sim.simx_return_ok:
+        # Convert the image to a numpy array
+        # image_byte_array = array.array('b', image)
+        # img_buffer = np.frombuffer(image_byte_array, dtype=np.uint8).reshape(resolution[1], resolution[0], 3)
+        # Flip the image vertically (if needed)
+        # img = cv2.flip(img_buffer, 0)
+        # return img
+
+
 
 if __name__ == "__main__":
     client = RemoteAPIClient()
@@ -414,9 +349,7 @@ if __name__ == "__main__":
     left_wheel_handle = sim.getObjectHandle("/PioneerP3DX/leftMotor")
     right_wheel_handle = sim.getObjectHandle("/PioneerP3DX/rightMotor")
 
-    # left = sim.getObjectHandle("/ultrasonicSensor[0]")
-    # front = sim.getObjectHandle("/ultrasonicSensor[4]")
-    # right = sim.getObjectHandle("/ultrasonicSensor[7]")
+    vision_sensor_handle = sim.getObject("/Vision_sensor")
 
     base_speed = 2.0
     turn_speed = 0.3
@@ -428,63 +361,38 @@ if __name__ == "__main__":
 
     sim.startSimulation()
     set_speeds(base_speed, base_speed)
-    # time.sleep(0.5)
-
-    # start_time = time.time()
-    # elapsed_time = 0
-
-    # LEFT_DIST = get_distance(left)
-    # RIGHT_DIST = get_distance(right)
-
     coord = Coordinates()
-    # cross = Crossroad()
     crossroads = []
 
     try:
         while True:
-        # while elapsed_time < 1.9:
             coord.move(1)
-            # cross.move(1)
             print("X: " + str(coord.x), "Y: " + str(coord.y))
-            # front_dist = get_distance(front)
-            # left_dist = get_distance(left)
-            # right_dist = get_distance(right)
-            # print("left", left_dist)
-            # print("right", right_dist)
-            # print("front", front_dist)
-            # front_free = is_free(front)
-            # left_free = is_free(left)
-            # right_free = is_free(right)
             front_free, left_free, right_free = get_free()
-            # print("front", front_free, "left", left_free, "right", right_free)
+
+            image = get_image_from_sensor(vision_sensor_handle)
+
+            if image is not None and detect_green_object(image):
+                print("Oggetto verde rilevato. Interrompendo la simulazione.")
+                break
 
             if front_free:
                 if not left_free and not right_free:
-                    # go_straight(left_dist, right_dist)
                     go_straight()
                 else:
                     print("Incrocio")
                     coord.move(30)
-                    # cross.move(30)
                     if is_far_enough(coord.x, coord.y, crossroads):
                         print("Nuovo incrocio")
-                        # crossroads.append((coord.x, coord.y))
                         crossroads.append(Crossroad(coord.x, coord.y))
                     else:
                         print("Incrocio già incontrato")
                     print("Incroci incontrati:", str(crossroads))
-                    # turn_randomly(front_free, left_free, right_free)
-                    # crossroads.append((coord._x, coord._y))
                     turn_randomly()
             else:
                 if not left_free and not right_free:
                     print("Vicolo cieco")
                     go_back()
-                # else:
-                    # print("Incrocio T o curva")
-                    # turn_randomly(front_free, left_free, right_free)
-                    # turn_randomly()
-            # elapsed_time = time.time() - start_time
 
     finally:
         sim.stopSimulation()
