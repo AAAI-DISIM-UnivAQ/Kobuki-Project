@@ -10,11 +10,13 @@ TURN_SPEED = 0.3
 SLOW_TURN_SPEED = 0.2
 MORE_SLOW_TURN_SPEED = 0.1
 
+
 class Body:
     _actuators: list
     # _motions: list
     _sim_body: SimulatedPioneerBody
     _go: bool
+
     # _orientation: float
 
     def __init__(self, actuators):
@@ -38,10 +40,9 @@ class Body:
         self.do_action("leftMotor", left_speed)
         self.do_action("rightMotor", right_speed)
 
-
     def go_straight(self):
-        self.set_speeds(BASE_SPEED,BASE_SPEED)
-        self._go = True
+        self.set_speeds(BASE_SPEED, BASE_SPEED)
+        # self._go = True
 
     def go_back(self):
         actual_angle = self._sim_body.get_robot_orientation()
@@ -72,11 +73,11 @@ class Body:
         current_angle = self.normalize_angle(actual_angle)
         print("current_angle = ", current_angle)
         # if dir == "front":
-            # diff = abs(target_angle - current_angle)
+        # diff = abs(target_angle - current_angle)
         # else:
-            # diff = abs(abs(target_angle) - abs(current_angle))
+        # diff = abs(abs(target_angle) - abs(current_angle))
         diff = abs(abs(target_angle) - abs(current_angle))
-        #print("diff", diff)
+        # print("diff", diff)
         state = ""
         while diff > ANGLE_TOLERANCE:
             if dir == 'right' or dir == 'front':
@@ -99,13 +100,11 @@ class Body:
             current_angle = self._sim_body.get_robot_orientation()
             # print('Current angle: ', current_angle)
             # if dir == "front":
-                # diff = abs(target_angle - current_angle)
+            # diff = abs(target_angle - current_angle)
             # else:
-                # diff = abs(abs(target_angle) - abs(current_angle))
+            # diff = abs(abs(target_angle) - abs(current_angle))
             diff = abs(abs(target_angle) - abs(current_angle))
             # print("diff", diff)
-
-
 
 
 def on_connect(client, userdata, flags, reason_code, properties):
@@ -122,23 +121,32 @@ def on_message(client, userdata, msg):
     # print(name, value)
 
     if name == "direction":
-        if value == "go" and not my_robot._go:
+        # if value == "go" and not my_robot._go:
+        if value == "go":
             # my_robot.set_speeds(BASE_SPEED, BASE_SPEED)
             # my_robot._go = True
-            my_robot.go_straight()
             print("Velocità base")
-        elif value == "cross" and my_robot._go:
-            # my_robot.set_speeds(0, 0)
-            # my_robot._go = False
+            my_robot.go_straight()
+            # print("Velocità base")
+        # elif value == "cross" and my_robot._go:
+        elif value == "cross":
             print("Stop")
-        elif value == "back" and my_robot._go:
-            print("Back")
-            client_mqtt.disconnect()
-            my_robot._go = False
-            my_robot.go_back()
-            client_mqtt.reconnect()
+            my_robot.set_speeds(0, 0)
+            # my_robot._go = False
+        elif value == "turn_right":
+            my_robot.set_speeds(TURN_SPEED, -TURN_SPEED)
+        elif value == "turn_right_slow":
+            my_robot.set_speeds(SLOW_TURN_SPEED, -SLOW_TURN_SPEED)
+        elif value == "turn_right_slow":
+            my_robot.set_speeds(MORE_SLOW_TURN_SPEED, -MORE_SLOW_TURN_SPEED)
+        # elif value == "back" and my_robot._go:
+        # print("Back")
+        # client_mqtt.disconnect()
+        # my_robot._go = False
+        # my_robot.go_back()
+        # client_mqtt.reconnect()
     # elif name == "orientation":
-        # my_robot._orientation = float(value)
+    # my_robot._orientation = float(value)
 
     # client.publish("action", value, my_robot._go)
 
