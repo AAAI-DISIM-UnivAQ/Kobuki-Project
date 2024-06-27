@@ -14,6 +14,8 @@ class Controller:
     _old_perception: str
     _free_directions: dict
     _direction: float
+    _rotating: bool
+    _target_angle: float
 
     def __init__(self, name, possible_perceptions, old_action):
         """
@@ -31,39 +33,52 @@ class Controller:
             "right": False
         }
         self._direction = 0.0
+        self._rotating = False
+        self._target_angle = 0.0
 
     def control_directions(self):
         front = self._free_directions["front"]
         left = self._free_directions["left"]
         right = self._free_directions["right"]
 
-        if front:
-            if not left and not right:
-                return "go"
+        print("Rotazione", self._rotating)
+
+        if not self._rotating:
+            if front:
+                if not left and not right:
+                    return "go"
+                else:
+                    print("cross")
+                    # return "cross"
             else:
-                print("cross")
-                # return "cross"
+                if not left and not right:
+                    # return "back"
+                    self._rotating = True
+                    return self.go_back()
+                else:
+                    return "undetermined"  # Opzionale, per gestire altri casi se necessario
         else:
-            if not left and not right:
-                # return "back"
-                return self.go_back()
-            else:
-                return "undetermined"  # Opzionale, per gestire altri casi se necessario
+            return self.set_robot_orientation(self._target_angle, "front")
 
     def go_back(self):
         actual_angle = self._direction
         current_angle = self.normalize_angle(actual_angle)
-        target_angle_back = 0
+        # target_angle_back = 0
         if -0.3 < current_angle < 0.3:
-            target_angle_back = math.pi
+            # target_angle_back = math.pi
+            self._target_angle = math.pi
         elif -1.8 < current_angle < -1.2:
-            target_angle_back = math.pi / 2
+            # target_angle_back = math.pi / 2
+            self._target_angle = math.pi / 2
         elif current_angle < -2.8 or current_angle > 2.8:
-            target_angle_back = 0
+            # target_angle_back = 0
+            self._target_angle = 0
         elif 1.2 < current_angle < 1.8:
-            target_angle_back = - math.pi / 2
-        print("target_angle_back = ", target_angle_back)
-        return self.set_robot_orientation(target_angle_back, "front")
+            # target_angle_back = - math.pi / 2
+            self._target_angle = - math.pi / 2
+        # print("target_angle_back = ", target_angle_back)
+        # print("target_angle", self._target_angle)
+        return self.set_robot_orientation(self._target_angle, "front")
         # self.go_straight()
         # self.set_speeds(0, 0)
         # time.sleep(1.0)
@@ -75,9 +90,10 @@ class Controller:
         return normalized_angle
 
     def set_robot_orientation(self, target_angle, dir):
+        print("target_angle", self._target_angle)
         actual_angle = self._direction
         current_angle = self.normalize_angle(actual_angle)
-        # print("current_angle = ", current_angle)
+        print("current_angle = ", current_angle)
         diff = abs(abs(target_angle) - abs(current_angle))
         # print("diff", diff)
         # while diff > ANGLE_TOLERANCE:
@@ -102,6 +118,10 @@ class Controller:
                 else:
                     # self.set_speeds(-MORE_SLOW_TURN_SPEED, MORE_SLOW_TURN_SPEED)
                     return "turn_left_more_slow"
+        else:
+            self._rotating = False
+            return "go"
+
             # current_angle = self._sim_body.get_robot_orientation()
             # diff = abs(abs(target_angle) - abs(current_angle))
 
@@ -125,20 +145,20 @@ def on_message(client, userdata, msg):
     perception_name = msg.topic.split("/")[1]
     message_value = msg.payload.decode("utf-8")
 
-    print("name:", perception_name)
+    # print("name:", perception_name)
 
     match perception_name:
         case "front":
-            print("Front", message_value)
+            # print("Front", message_value)
             update_direction(perception_name, message_value)
         case "left":
-            print("Left", message_value)
+            # print("Left", message_value)
             update_direction(perception_name, message_value)
         case "right":
-            print("Right", message_value)
+            # print("Right", message_value)
             update_direction(perception_name, message_value)
-        case "green":
-            print("Green", message_value)
+        # case "green":
+            # print("Green", message_value)
         case "orientation":
             print("Orientation", message_value)
             # client.publish(f"controls/{perception_name}", message_value)
@@ -148,6 +168,7 @@ def on_message(client, userdata, msg):
     # Controllo: se sta ruotando ritorna old state così non si crea coda ed esegue correttamente la rotaizone
 
     control = controller.control_directions()
+    print("control:", control)
     if control != controller._old_perception:
         client.publish(f"controls/direction", control)
         controller._old_perception = control
