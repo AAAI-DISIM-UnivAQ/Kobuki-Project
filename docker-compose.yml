@@ -14,19 +14,26 @@ services:
       - 8080
     environment:
       - TZ=Europe/Rome
+    depends_on:
+      - mosquitto
 
-  #action_module:
-    #build:
-      #context: ./action
-      #dockerfile: Dockerfile
-    #container_name: action_module
-    #hostname: action_module
-    #ports:
-      #- "8090:8090"
-    #expose:
-      #- 8090
-    #environment:
-      #- TZ=Europe/Rome
+  action_module:
+    build:
+      context: ./action
+      dockerfile: Dockerfile
+    container_name: action_module
+    hostname: action_module
+    ports:
+      - "8090:8090"
+    expose:
+      - 8090
+    environment:
+      - TZ=Europe/Rome
+    depends_on:
+      - mosquitto
+      - sense_module
+      - perc_module
+      - controller_module
 
   perc_module:
     build:
@@ -42,23 +49,24 @@ services:
       - TZ=Europe/Rome
     depends_on:
       - sense_module
+      - mosquitto
 
-  #controller:
-    #build:
-      #context: ./controller
-      #dockerfile: Dockerfile
-    #container_name: controller
-    #hostname: controller
-    #ports:
-      #- "8110:8110"
-    #expose:
-      #- 8110
-    #environment:
-      #- TZ=Europe/Rome
-    #depends_on:
-      #- sense_module
-      #- action_module
-      #- perc_module
+  controller_module:
+    build:
+      context: ./controller
+      dockerfile: Dockerfile
+    container_name: controller_module
+    hostname: controller
+    ports:
+      - "8110:8110"
+    expose:
+      - 8110
+    environment:
+      - TZ=Europe/Rome
+    depends_on:
+      - sense_module
+      - perc_module
+      - mosquitto
 
   mosquitto:
     image: eclipse-mosquitto:latest

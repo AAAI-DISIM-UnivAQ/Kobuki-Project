@@ -20,14 +20,14 @@ class SimulatedPioneerBody:
         self._robot_handle = self._sim.getObjectHandle("/PioneerP3DX")
         self._my_sensors_values = []
         front_sensors = [
-                   self._sim.getObject("./ultrasonicSensor[0]"),
-                   self._sim.getObject("./ultrasonicSensor[1]"),
-                   self._sim.getObject("./ultrasonicSensor[2]"),
-                   self._sim.getObject("./ultrasonicSensor[3]"),
-                   self._sim.getObject("./ultrasonicSensor[4]"),
-                   self._sim.getObject("./ultrasonicSensor[5]"),
-                   self._sim.getObject("./ultrasonicSensor[6]"),
-                   self._sim.getObject("./ultrasonicSensor[7]")
+                   self._sim.getObjectHandle("./ultrasonicSensor[0]"),
+                   self._sim.getObjectHandle("./ultrasonicSensor[1]"),
+                   self._sim.getObjectHandle("./ultrasonicSensor[2]"),
+                   self._sim.getObjectHandle("./ultrasonicSensor[3]"),
+                   self._sim.getObjectHandle("./ultrasonicSensor[4]"),
+                   self._sim.getObjectHandle("./ultrasonicSensor[5]"),
+                   self._sim.getObjectHandle("./ultrasonicSensor[6]"),
+                   self._sim.getObjectHandle("./ultrasonicSensor[7]")
         ]
         self._my_sensors_values.append(front_sensors)
         back_sensors = [
@@ -70,9 +70,14 @@ class SimulatedPioneerBody:
         return orientation[2]  # Restituisce l'angolo yaw
 
     def sense(self):
+        # left_wheel_handle = self._sim.getObjectHandle("/PioneerP3DX/leftMotor")
+        # right_wheel_handle = self._sim.getObjectHandle("/PioneerP3DX/rightMotor")
+        # self._sim.setJointTargetVelocity(left_wheel_handle, 2.0)
+        # self._sim.setJointTargetVelocity(right_wheel_handle, 2.0)
         try:
             vision_values = self._read_vision_sensors(2)  # only vision sensors
             front_values = self._read_proximity_sensors(0)  # only front sensors
+            # print("LEN", len(front_values))
             orientation = self.get_robot_orientation()
             return vision_values, front_values, orientation
         except Exception as e:

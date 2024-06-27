@@ -9,6 +9,7 @@ class SimulatedPioneerBody:
     _cSim_client: Any
     _my_actuators: dict
     _my_actuators_names: List
+    _robot_handle: Any # per test
 
     def __init__(self, name: str):
         self._my_name = name
@@ -17,6 +18,7 @@ class SimulatedPioneerBody:
         self._cSim_client = RemoteAPIClient(host=MY_SIM_HOST)
         self._sim = self._cSim_client.require('sim')
         print("Connected to SIM")
+        self._robot_handle = self._sim.getObjectHandle("/PioneerP3DX") # per test
         self._my_actuators_names = ["leftMotor", "rightMotor"]
         # Get handles
         self._my_actuators = {}
@@ -35,3 +37,7 @@ class SimulatedPioneerBody:
 
     def stop(self):
         self._sim.stopSimulation()
+
+    def get_robot_orientation(self):
+        orientation = self._sim.getObjectOrientation(self._robot_handle, -1)
+        return orientation[2]  # Restituisce l'angolo yaw
