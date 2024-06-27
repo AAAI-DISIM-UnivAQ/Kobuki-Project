@@ -44,6 +44,7 @@ class Body:
         self.set_speeds(BASE_SPEED, BASE_SPEED)
         # self._go = True
 
+    """
     def go_back(self):
         actual_angle = self._sim_body.get_robot_orientation()
         current_angle = self.normalize_angle(actual_angle)
@@ -105,6 +106,7 @@ class Body:
             # diff = abs(abs(target_angle) - abs(current_angle))
             diff = abs(abs(target_angle) - abs(current_angle))
             # print("diff", diff)
+    """
 
 
 def on_connect(client, userdata, flags, reason_code, properties):
