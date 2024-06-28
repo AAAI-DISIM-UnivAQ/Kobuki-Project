@@ -44,6 +44,12 @@ class Body:
         self.set_speeds(BASE_SPEED, BASE_SPEED)
         # self._go = True
 
+    def turn_left(self, vel):
+        self.set_speeds(-vel, vel)
+
+    def turn_right(self, vel):
+        self.set_speeds(vel, -vel)
+
     """
     def go_back(self):
         actual_angle = self._sim_body.get_robot_orientation()
@@ -136,11 +142,11 @@ def on_message(client, userdata, msg):
             my_robot.set_speeds(0, 0)
             # my_robot._go = False
         elif value == "turn_right":
-            my_robot.set_speeds(TURN_SPEED, -TURN_SPEED)
+            my_robot.turn_right(TURN_SPEED)
         elif value == "turn_right_slow":
-            my_robot.set_speeds(SLOW_TURN_SPEED, -SLOW_TURN_SPEED)
+            my_robot.turn_right(SLOW_TURN_SPEED)
         elif value == "turn_right_slow":
-            my_robot.set_speeds(MORE_SLOW_TURN_SPEED, -MORE_SLOW_TURN_SPEED)
+            my_robot.turn_right(MORE_SLOW_TURN_SPEED)
         # elif value == "back" and my_robot._go:
         # print("Back")
         # client_mqtt.disconnect()

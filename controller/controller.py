@@ -16,6 +16,7 @@ class Controller:
     _direction: float
     _rotating: bool
     _target_angle: float
+    _rotation_sense: str
 
     def __init__(self, name, possible_perceptions, old_action):
         """
@@ -35,8 +36,10 @@ class Controller:
         self._direction = 0.0
         self._rotating = False
         self._target_angle = 0.0
+        self._rotation_sense = ""
 
     def control_directions(self):
+        global client_mqtt
         front = self._free_directions["front"]
         left = self._free_directions["left"]
         right = self._free_directions["right"]
@@ -49,6 +52,11 @@ class Controller:
                     return "go"
                 else:
                     print("cross")
+                    client_mqtt.disconnect()
+                    time.sleep(1.8)
+                    client_mqtt.reconnect()
+                    self._rotating = True
+                    return self.turn_right()
                     # return "cross"
             else:
                 if not left and not right:
@@ -58,7 +66,7 @@ class Controller:
                 else:
                     return "undetermined"  # Opzionale, per gestire altri casi se necessario
         else:
-            return self.set_robot_orientation(self._target_angle, "front")
+            return self.set_robot_orientation(self._target_angle, self._rotation_sense)
 
     def go_back(self):
         actual_angle = self._direction
@@ -78,7 +86,8 @@ class Controller:
             self._target_angle = - math.pi / 2
         # print("target_angle_back = ", target_angle_back)
         # print("target_angle", self._target_angle)
-        return self.set_robot_orientation(self._target_angle, "front")
+        self._rotation_sense = "front"
+        return self.set_robot_orientation(self._target_angle, self._rotation_sense)
         # self.go_straight()
         # self.set_speeds(0, 0)
         # time.sleep(1.0)
@@ -93,7 +102,7 @@ class Controller:
         print("target_angle", self._target_angle)
         actual_angle = self._direction
         current_angle = self.normalize_angle(actual_angle)
-        print("current_angle = ", current_angle)
+        print("current_angle", current_angle)
         diff = abs(abs(target_angle) - abs(current_angle))
         # print("diff", diff)
         # while diff > ANGLE_TOLERANCE:
@@ -124,6 +133,36 @@ class Controller:
 
             # current_angle = self._sim_body.get_robot_orientation()
             # diff = abs(abs(target_angle) - abs(current_angle))
+
+    def turn_right(self):
+        self.find_target_angle("right")
+        self._rotation_sense = "right"
+        return self.set_robot_orientation(self._target_angle, self._rotation_sense)
+        # go_straight()
+        # coord.move(30)
+        # time.sleep(1.9)
+
+    def find_target_angle(self, direction):
+        actual_angle = self._direction
+        current_angle = self.normalize_angle(actual_angle)
+        if direction == 'right':
+            if -0.3 < current_angle < 0.3:
+                self._target_angle = math.pi / 2
+            elif -1.8 < current_angle < -1.2:
+                self._target_angle = math.pi
+            elif current_angle < -2.8 or current_angle > 2.8:
+                self._target_angle = - math.pi / 2
+            elif 1.2 < current_angle < 1.8:
+                self._target_angle = 0
+        if direction == 'left':
+            if -0.3 < current_angle < 0.3:
+                self._target_angle = - math.pi / 2
+            elif -1.8 < current_angle < -1.2:
+                self._target_angle = 0
+            elif current_angle < -2.8 or current_angle > 2.8:
+                self._target_angle = math.pi / 2
+            elif 1.2 < current_angle < 1.8:
+                self._target_angle = - math.pi
 
 
 def update_direction(name, val):
