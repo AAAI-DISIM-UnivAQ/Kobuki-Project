@@ -1,7 +1,5 @@
 import paho.mqtt.client as mqtt
 from SimulatedRobot import SimulatedPioneerBody
-import threading
-import math
 import time
 
 BASE_SPEED = 2.0
@@ -130,22 +128,34 @@ def on_message(client, userdata, msg):
 
     if name == "direction":
         # if value == "go" and not my_robot._go:
-        if value == "go":
+        if value == "rotation_done":
+            client_mqtt.disconnect()
+            my_robot.go_straight()
+            time.sleep(2.5)
+            client_mqtt.reconnect()
             # my_robot.set_speeds(BASE_SPEED, BASE_SPEED)
             # my_robot._go = True
             print("Velocità base")
-            my_robot.go_straight()
+
             # print("Velocità base")
         # elif value == "cross" and my_robot._go:
+        elif value == "go":
+            my_robot.go_straight()
         elif value == "cross":
             print("Stop")
             my_robot.set_speeds(0, 0)
             # my_robot._go = False
+        elif value == "turn_left":
+            my_robot.turn_left(TURN_SPEED)
+        elif value == "turn_left_slow":
+            my_robot.turn_left(SLOW_TURN_SPEED)
+        elif value == "turn_left_more_slow":
+            my_robot.turn_left(MORE_SLOW_TURN_SPEED)
         elif value == "turn_right":
             my_robot.turn_right(TURN_SPEED)
         elif value == "turn_right_slow":
             my_robot.turn_right(SLOW_TURN_SPEED)
-        elif value == "turn_right_slow":
+        elif value == "turn_right_more_slow":
             my_robot.turn_right(MORE_SLOW_TURN_SPEED)
         # elif value == "back" and my_robot._go:
         # print("Back")

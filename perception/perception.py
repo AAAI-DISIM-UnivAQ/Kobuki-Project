@@ -48,7 +48,8 @@ class Perceptor:
         # Threshold the image to get only green colors
         mask = cv2.inRange(hsv_image, lower_green, upper_green)
         # Find contours in the masked image
-        contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        contours, _ = cv2.findContours(
+            mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         return len(contours) > 0
 
     def percept(self, values):
@@ -77,7 +78,6 @@ class Perceptor:
             elif key == "orientation":
                 print("Orientation", str(value))
                 self._perception["orientation"] = value
-
 
 
 def on_connect(client, userdata, flags, reason_code, properties):

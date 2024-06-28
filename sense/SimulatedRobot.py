@@ -20,25 +20,25 @@ class SimulatedPioneerBody:
         self._robot_handle = self._sim.getObjectHandle("/PioneerP3DX")
         self._my_sensors_values = []
         front_sensors = [
-                   self._sim.getObjectHandle("./ultrasonicSensor[0]"),
-                   self._sim.getObjectHandle("./ultrasonicSensor[1]"),
-                   self._sim.getObjectHandle("./ultrasonicSensor[2]"),
-                   self._sim.getObjectHandle("./ultrasonicSensor[3]"),
-                   self._sim.getObjectHandle("./ultrasonicSensor[4]"),
-                   self._sim.getObjectHandle("./ultrasonicSensor[5]"),
-                   self._sim.getObjectHandle("./ultrasonicSensor[6]"),
-                   self._sim.getObjectHandle("./ultrasonicSensor[7]")
+            self._sim.getObjectHandle("./ultrasonicSensor[0]"),
+            self._sim.getObjectHandle("./ultrasonicSensor[1]"),
+            self._sim.getObjectHandle("./ultrasonicSensor[2]"),
+            self._sim.getObjectHandle("./ultrasonicSensor[3]"),
+            self._sim.getObjectHandle("./ultrasonicSensor[4]"),
+            self._sim.getObjectHandle("./ultrasonicSensor[5]"),
+            self._sim.getObjectHandle("./ultrasonicSensor[6]"),
+            self._sim.getObjectHandle("./ultrasonicSensor[7]")
         ]
         self._my_sensors_values.append(front_sensors)
         back_sensors = [
-                self._sim.getObject("./ultrasonicSensor[8]"),
-                self._sim.getObject("./ultrasonicSensor[9]"),
-                self._sim.getObject("./ultrasonicSensor[10]"),
-                self._sim.getObject("./ultrasonicSensor[11]"),
-                self._sim.getObject("./ultrasonicSensor[12]"),
-                self._sim.getObject("./ultrasonicSensor[13]"),
-                self._sim.getObject("./ultrasonicSensor[14]"),
-                self._sim.getObject("./ultrasonicSensor[15]")
+            self._sim.getObject("./ultrasonicSensor[8]"),
+            self._sim.getObject("./ultrasonicSensor[9]"),
+            self._sim.getObject("./ultrasonicSensor[10]"),
+            self._sim.getObject("./ultrasonicSensor[11]"),
+            self._sim.getObject("./ultrasonicSensor[12]"),
+            self._sim.getObject("./ultrasonicSensor[13]"),
+            self._sim.getObject("./ultrasonicSensor[14]"),
+            self._sim.getObject("./ultrasonicSensor[15]")
         ]
         self._my_sensors_values.append(back_sensors)
         connected_sensors = [
@@ -76,7 +76,8 @@ class SimulatedPioneerBody:
         # self._sim.setJointTargetVelocity(right_wheel_handle, 2.0)
         try:
             vision_values = self._read_vision_sensors(2)  # only vision sensors
-            front_values = self._read_proximity_sensors(0)  # only front sensors
+            front_values = self._read_proximity_sensors(
+                0)  # only front sensors
             # print("LEN", len(front_values))
             orientation = self.get_robot_orientation()
             return vision_values, front_values, orientation

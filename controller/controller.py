@@ -1,6 +1,7 @@
 import paho.mqtt.client as mqtt
 import math
 import time
+import random
 
 MAX_CORRECTION = 50
 ANGLE_TOLERANCE = 0.02
@@ -56,7 +57,7 @@ class Controller:
                     time.sleep(1.8)
                     client_mqtt.reconnect()
                     self._rotating = True
-                    return self.turn_right()
+                    return self.turn_randomly()
                     # return "cross"
             else:
                 if not left and not right:
@@ -129,7 +130,7 @@ class Controller:
                     return "turn_left_more_slow"
         else:
             self._rotating = False
-            return "go"
+            return "rotation_done"
 
             # current_angle = self._sim_body.get_robot_orientation()
             # diff = abs(abs(target_angle) - abs(current_angle))
@@ -141,6 +142,28 @@ class Controller:
         # go_straight()
         # coord.move(30)
         # time.sleep(1.9)
+
+    def turn_left(self):
+        self.find_target_angle("left")
+        self._rotation_sense = "left"
+        return self.set_robot_orientation(self._target_angle, self._rotation_sense)
+        # go_straight()
+        # coord.move(30)
+        # time.sleep(1.9)
+
+    def turn_randomly(self):
+        a = []
+        for f in self._free_directions:
+            if f:
+                a.append(f)
+        rand = random.choice(a)
+
+        if rand == "front":
+            return "go"
+        elif rand == "right":
+            return self.turn_right()
+        elif rand == "left":
+            return self.turn_left()
 
     def find_target_angle(self, direction):
         actual_angle = self._direction
@@ -203,7 +226,6 @@ def on_message(client, userdata, msg):
             # client.publish(f"controls/{perception_name}", message_value)
             controller._direction = float(message_value)
 
-
     # Controllo: se sta ruotando ritorna old state così non si crea coda ed esegue correttamente la rotaizone
 
     control = controller.control_directions()
@@ -222,7 +244,9 @@ def on_subscribe(client, userdata, mid, reason_code_list, properties):
 
 if __name__ == "__main__":
     controller = (Controller("Brain",
-                             possible_perceptions=["go", "cross", "finish", "back"],  # sostituire cross con turn left, turn right
+                             # sostituire cross con turn left, turn right
+                             possible_perceptions=[
+                                 "go", "left", "finish", "back"],
                              old_action="go"))
 
     client_mqtt = mqtt.Client(

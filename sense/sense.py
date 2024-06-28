@@ -39,7 +39,8 @@ class Body:
 
 
 if __name__ == "__main__":
-    my_robot = Body(["Vision_sensor", "ultrasonicSensor[0]", "ultrasonicSensor[4]", "ultrasonicSensor[7]"])
+    my_robot = Body(["Vision_sensor", "ultrasonicSensor[0]",
+                    "ultrasonicSensor[4]", "ultrasonicSensor[7]"])
     print("Keys in _d_sensors:", my_robot._d_sensors.keys())
 
     client_pub = mqtt.Client(
