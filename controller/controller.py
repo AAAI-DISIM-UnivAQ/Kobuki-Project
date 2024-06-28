@@ -60,7 +60,17 @@ class Controller:
                     return self.turn_randomly()
                     # return "cross"
             else:
-                if not left and not right:
+                if left and right:
+                    client_mqtt.disconnect()
+                    time.sleep(1.8)
+                    client_mqtt.reconnect()
+                    self._rotating = True
+                    return self.turn_randomly()
+                elif right:
+                    return self.turn_right()
+                elif left:
+                    return self.turn_left()
+                elif not left and not right:
                     # return "back"
                     self._rotating = True
                     return self.go_back()
@@ -246,7 +256,7 @@ if __name__ == "__main__":
     controller = (Controller("Brain",
                              # sostituire cross con turn left, turn right
                              possible_perceptions=[
-                                 "go", "left", "finish", "back"],
+                                 "go", "turn_left", "turn_right", "finish", "back"],
                              old_action="go"))
 
     client_mqtt = mqtt.Client(
