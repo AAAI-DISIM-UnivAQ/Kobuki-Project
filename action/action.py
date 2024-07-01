@@ -48,70 +48,6 @@ class Body:
     def turn_right(self, vel):
         self.set_speeds(vel, -vel)
 
-    """
-    def go_back(self):
-        actual_angle = self._sim_body.get_robot_orientation()
-        current_angle = self.normalize_angle(actual_angle)
-        target_angle_back = 0
-        if -0.3 < current_angle < 0.3:
-            target_angle_back = math.pi
-        elif -1.8 < current_angle < -1.2:
-            target_angle_back = math.pi / 2
-        elif current_angle < -2.8 or current_angle > 2.8:
-            target_angle_back = 0
-        elif 1.2 < current_angle < 1.8:
-            target_angle_back = - math.pi / 2
-        print("target_angle_back = ", target_angle_back)
-        self.set_robot_orientation(target_angle_back, "front")
-        # self.go_straight()
-        self.set_speeds(0, 0)
-        time.sleep(1.0)
-
-    def normalize_angle(self, angle):
-        normalized_angle = angle % (2 * math.pi)
-        if normalized_angle >= math.pi:
-            normalized_angle -= 2 * math.pi
-        return normalized_angle
-
-    def set_robot_orientation(self, target_angle, dir):
-        actual_angle = self._sim_body.get_robot_orientation()
-        current_angle = self.normalize_angle(actual_angle)
-        print("current_angle = ", current_angle)
-        # if dir == "front":
-        # diff = abs(target_angle - current_angle)
-        # else:
-        # diff = abs(abs(target_angle) - abs(current_angle))
-        diff = abs(abs(target_angle) - abs(current_angle))
-        # print("diff", diff)
-        state = ""
-        while diff > ANGLE_TOLERANCE:
-            if dir == 'right' or dir == 'front':
-                if diff > 0.8 and state != "turn":
-                    self.set_speeds(TURN_SPEED, -TURN_SPEED)
-                    state = "turn"
-                elif 0.3 < diff < 0.8 and state == "turn":
-                    self.set_speeds(SLOW_TURN_SPEED, -SLOW_TURN_SPEED)
-                    state = "slow"
-                elif diff < 0.3 and state == "slow":
-                    self.set_speeds(MORE_SLOW_TURN_SPEED, -MORE_SLOW_TURN_SPEED)
-                    state = "more"
-            elif dir == 'left':
-                if diff > 0.8:
-                    self.set_speeds(-TURN_SPEED, TURN_SPEED)
-                elif 0.3 < diff < 0.8:
-                    self.set_speeds(-SLOW_TURN_SPEED, SLOW_TURN_SPEED)
-                else:
-                    self.set_speeds(-MORE_SLOW_TURN_SPEED, MORE_SLOW_TURN_SPEED)
-            current_angle = self._sim_body.get_robot_orientation()
-            # print('Current angle: ', current_angle)
-            # if dir == "front":
-            # diff = abs(target_angle - current_angle)
-            # else:
-            # diff = abs(abs(target_angle) - abs(current_angle))
-            diff = abs(abs(target_angle) - abs(current_angle))
-            # print("diff", diff)
-    """
-
 
 def on_connect(client, userdata, flags, reason_code, properties):
     if reason_code.is_failure:
@@ -141,10 +77,9 @@ def on_message(client, userdata, msg):
         # elif value == "cross" and my_robot._go:
         elif value == "go":
             my_robot.go_straight()
-        elif value == "cross":
-            print("Stop")
-            my_robot.set_speeds(0, 0)
-            # my_robot._go = False
+        # elif value == "cross":
+            # print("Stop")
+            # my_robot.set_speeds(0, 0)
         elif value == "turn_left":
             my_robot.turn_left(TURN_SPEED)
         elif value == "turn_left_slow":
@@ -157,14 +92,6 @@ def on_message(client, userdata, msg):
             my_robot.turn_right(SLOW_TURN_SPEED)
         elif value == "turn_right_more_slow":
             my_robot.turn_right(MORE_SLOW_TURN_SPEED)
-        # elif value == "back" and my_robot._go:
-        # print("Back")
-        # client_mqtt.disconnect()
-        # my_robot._go = False
-        # my_robot.go_back()
-        # client_mqtt.reconnect()
-    # elif name == "orientation":
-    # my_robot._orientation = float(value)
 
     # client.publish("action", value, my_robot._go)
 

@@ -38,6 +38,7 @@ class Controller:
         self._rotating = False
         self._target_angle = 0.0
         self._rotation_sense = ""
+        self.rotation_done = False
 
     def control_directions(self):
         global client_mqtt
@@ -45,37 +46,55 @@ class Controller:
         left = self._free_directions["left"]
         right = self._free_directions["right"]
 
-        print("Rotazione", self._rotating)
+        # print("Rotazione", self._rotating)
 
         if not self._rotating:
-            if front:
-                if not left and not right:
+            if self.rotation_done:
+                if front and not left and not right:
+                    print("FINISH ROTATION DONE")
+                    self.rotation_done = False
+                else:
+                    print("ROTATION DONE")
                     return "go"
-                else:
-                    print("cross")
-                    client_mqtt.disconnect()
-                    time.sleep(1.8)
-                    client_mqtt.reconnect()
-                    self._rotating = True
-                    return self.turn_randomly()
-                    # return "cross"
             else:
-                if left and right:
-                    client_mqtt.disconnect()
-                    time.sleep(1.8)
-                    client_mqtt.reconnect()
-                    self._rotating = True
-                    return self.turn_randomly()
-                elif right:
-                    return self.turn_right()
-                elif left:
-                    return self.turn_left()
-                elif not left and not right:
-                    # return "back"
-                    self._rotating = True
-                    return self.go_back()
+                if front:
+                    if not left and not right:
+                        # strada dritta
+                        return "go"
+                    else:
+                        # incrocio a 4
+                        print("INCROCIO A 4")
+                        client_mqtt.disconnect()
+                        time.sleep(1.8)
+                        client_mqtt.reconnect()
+                        self._rotating = True
+                        return self.turn_randomly()
+                        # return "cross"
                 else:
-                    return "undetermined"  # Opzionale, per gestire altri casi se necessario
+                    if left and right:
+                        # incrocio a T
+                        print("INCROCIO A T")
+                        client_mqtt.disconnect()
+                        time.sleep(1.8)
+                        client_mqtt.reconnect()
+                        self._rotating = True
+                        return self.turn_randomly()
+                    elif right:
+                        # curva a destra
+                        print("CURVA DX")
+                        return self.turn_right()
+                    elif left:
+                        # curva a sinistra
+                        print("CURVA SX")
+                        return self.turn_left()
+                    elif not left and not right:
+                        # vicolo cieco
+                        # return "back"
+                        print("VICOLO CIECO")
+                        self._rotating = True
+                        return self.go_back()
+                    else:
+                        return "undetermined"  # Opzionale, per gestire altri casi se necessario
         else:
             return self.set_robot_orientation(self._target_angle, self._rotation_sense)
 
@@ -110,10 +129,10 @@ class Controller:
         return normalized_angle
 
     def set_robot_orientation(self, target_angle, dir):
-        print("target_angle", self._target_angle)
+        # print("target_angle", self._target_angle)
         actual_angle = self._direction
         current_angle = self.normalize_angle(actual_angle)
-        print("current_angle", current_angle)
+        # print("current_angle", current_angle)
         diff = abs(abs(target_angle) - abs(current_angle))
         # print("diff", diff)
         # while diff > ANGLE_TOLERANCE:
@@ -140,7 +159,9 @@ class Controller:
                     return "turn_left_more_slow"
         else:
             self._rotating = False
-            return "rotation_done"
+            # return "rotation_done"
+            self.rotation_done = True
+            return "go"
 
             # current_angle = self._sim_body.get_robot_orientation()
             # diff = abs(abs(target_angle) - abs(current_angle))
@@ -163,10 +184,12 @@ class Controller:
 
     def turn_randomly(self):
         a = []
-        for f in self._free_directions:
-            if f:
-                a.append(f)
+        for direction, is_free in self._free_directions.items():
+            if direction:
+                a.append(direction)
+        print("DIREZIONI DISPONIBILI", a)
         rand = random.choice(a)
+        print("DIREZIONE SCELTA", rand)
 
         if rand == "front":
             return "go"
@@ -232,7 +255,7 @@ def on_message(client, userdata, msg):
         # case "green":
             # print("Green", message_value)
         case "orientation":
-            print("Orientation", message_value)
+            # print("Orientation", message_value)
             # client.publish(f"controls/{perception_name}", message_value)
             controller._direction = float(message_value)
 
