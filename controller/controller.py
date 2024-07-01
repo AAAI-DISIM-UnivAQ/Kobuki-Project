@@ -47,6 +47,7 @@ class Controller:
         right = self._free_directions["right"]
 
         # print("Rotazione", self._rotating)
+        print("Front:", str(front), "Left:", str(left), "Right:", str(right))
 
         if not self._rotating:
             if self.rotation_done:
