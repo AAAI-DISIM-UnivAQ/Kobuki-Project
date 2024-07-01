@@ -58,44 +58,49 @@ class Controller:
                     print("ROTATION DONE")
                     return "go"
             else:
-                if front:
-                    if not left and not right:
-                        # strada dritta
-                        return "go"
-                    else:
-                        # incrocio a 4
-                        print("INCROCIO A 4")
-                        client_mqtt.disconnect()
-                        time.sleep(1.8)
-                        client_mqtt.reconnect()
-                        self._rotating = True
-                        return self.turn_randomly()
-                        # return "cross"
+                if self._old_perception == "cross":
+                    print("SCELTA DELLA DIREZIONE")
+                    self._rotating = True
+                    return self.turn_randomly()
                 else:
-                    if left and right:
-                        # incrocio a T
-                        print("INCROCIO A T")
-                        client_mqtt.disconnect()
-                        time.sleep(1.8)
-                        client_mqtt.reconnect()
-                        self._rotating = True
-                        return self.turn_randomly()
-                    elif right:
-                        # curva a destra
-                        print("CURVA DX")
-                        return self.turn_right()
-                    elif left:
-                        # curva a sinistra
-                        print("CURVA SX")
-                        return self.turn_left()
-                    elif not left and not right:
-                        # vicolo cieco
-                        # return "back"
-                        print("VICOLO CIECO")
-                        self._rotating = True
-                        return self.go_back()
+                    if front:
+                        if not left and not right:
+                            # strada dritta
+                            return "go"
+                        else:
+                            # incrocio a 4
+                            print("INCROCIO A 4")
+                            client_mqtt.disconnect()
+                            time.sleep(1.9)
+                            client_mqtt.reconnect()
+                            # self._rotating = True
+                            # return self.turn_randomly()
+                            return "cross"
                     else:
-                        return "undetermined"  # Opzionale, per gestire altri casi se necessario
+                        if left and right:
+                            # incrocio a T
+                            print("INCROCIO A T")
+                            client_mqtt.disconnect()
+                            time.sleep(1.9)
+                            client_mqtt.reconnect()
+                            self._rotating = True
+                            return self.turn_randomly()
+                        elif right:
+                            # curva a destra
+                            print("CURVA DX")
+                            return self.turn_right()
+                        elif left:
+                            # curva a sinistra
+                            print("CURVA SX")
+                            return self.turn_left()
+                        elif not left and not right:
+                            # vicolo cieco
+                            # return "back"
+                            print("VICOLO CIECO")
+                            self._rotating = True
+                            return self.go_back()
+                        else:
+                            return "undetermined"  # Opzionale, per gestire altri casi se necessario
         else:
             return self.set_robot_orientation(self._target_angle, self._rotation_sense)
 
@@ -186,7 +191,7 @@ class Controller:
     def turn_randomly(self):
         a = []
         for direction, is_free in self._free_directions.items():
-            if direction:
+            if is_free:
                 a.append(direction)
         print("DIREZIONI DISPONIBILI", a)
         rand = random.choice(a)

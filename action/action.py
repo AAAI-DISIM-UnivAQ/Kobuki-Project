@@ -77,9 +77,9 @@ def on_message(client, userdata, msg):
         # elif value == "cross" and my_robot._go:
         elif value == "go":
             my_robot.go_straight()
-        # elif value == "cross":
-            # print("Stop")
-            # my_robot.set_speeds(0, 0)
+        elif value == "cross":
+            print("Stop")
+            my_robot.set_speeds(0, 0)
         elif value == "turn_left":
             my_robot.turn_left(TURN_SPEED)
         elif value == "turn_left_slow":
