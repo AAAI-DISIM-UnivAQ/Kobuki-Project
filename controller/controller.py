@@ -191,7 +191,7 @@ class Controller:
 
         if rand == "front":
             self._rotating = False
-            # self.rotation_done = True  #usare per far andare dritto il robot
+            self.rotation_done = True  # usare per far andare dritto il robot
             return "go"
         elif rand == "right":
             return self.turn_right()
