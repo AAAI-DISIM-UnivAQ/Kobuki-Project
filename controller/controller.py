@@ -20,9 +20,6 @@ class Controller:
     _rotation_sense: str
 
     def __init__(self, name, possible_perceptions, old_action):
-        """
-        possible_perceptions: list of expected possible perception to handle
-        """
         assert isinstance(name, str) and isinstance(possible_perceptions, list)
         self._my_name = name
         self._my_possible_perceptions = possible_perceptions
@@ -39,6 +36,12 @@ class Controller:
         self._target_angle = 0.0
         self._rotation_sense = ""
         self.rotation_done = False
+        self.waiting_update_direction = False
+        self.update_direction = {
+            "front": False,
+            "left": False,
+            "right": False
+        }
 
     def control_directions(self):
         global client_mqtt
@@ -46,8 +49,13 @@ class Controller:
         left = self._free_directions["left"]
         right = self._free_directions["right"]
 
+        print("Rotating", self._rotating)
+
         # print("Rotazione", self._rotating)
         print("Front:", str(front), "Left:", str(left), "Right:", str(right))
+
+        if self.update_direction["front"] and self.update_direction["left"] and self.update_direction["right"]:
+            self.waiting_update_direction = False
 
         if not self._rotating:
             if self.rotation_done:
@@ -107,26 +115,16 @@ class Controller:
     def go_back(self):
         actual_angle = self._direction
         current_angle = self.normalize_angle(actual_angle)
-        # target_angle_back = 0
         if -0.3 < current_angle < 0.3:
-            # target_angle_back = math.pi
             self._target_angle = math.pi
         elif -1.8 < current_angle < -1.2:
-            # target_angle_back = math.pi / 2
             self._target_angle = math.pi / 2
         elif current_angle < -2.8 or current_angle > 2.8:
-            # target_angle_back = 0
             self._target_angle = 0
         elif 1.2 < current_angle < 1.8:
-            # target_angle_back = - math.pi / 2
             self._target_angle = - math.pi / 2
-        # print("target_angle_back = ", target_angle_back)
-        # print("target_angle", self._target_angle)
         self._rotation_sense = "front"
         return self.set_robot_orientation(self._target_angle, self._rotation_sense)
-        # self.go_straight()
-        # self.set_speeds(0, 0)
-        # time.sleep(1.0)
 
     def normalize_angle(self, angle):
         normalized_angle = angle % (2 * math.pi)
@@ -135,33 +133,23 @@ class Controller:
         return normalized_angle
 
     def set_robot_orientation(self, target_angle, dir):
-        # print("target_angle", self._target_angle)
         actual_angle = self._direction
         current_angle = self.normalize_angle(actual_angle)
-        # print("current_angle", current_angle)
         diff = abs(abs(target_angle) - abs(current_angle))
-        # print("diff", diff)
-        # while diff > ANGLE_TOLERANCE:
         if diff > ANGLE_TOLERANCE:
             if dir == 'right' or dir == 'front':
                 if diff > 0.8:
-                    # self.set_speeds(TURN_SPEED, -TURN_SPEED)
                     return "turn_right"
                 elif 0.3 < diff < 0.8:
-                    # self.set_speeds(SLOW_TURN_SPEED, -SLOW_TURN_SPEED)
                     return "turn_right_slow"
                 else:
-                    # self.set_speeds(MORE_SLOW_TURN_SPEED, -MORE_SLOW_TURN_SPEED)
                     return "turn_right_more_slow"
             elif dir == 'left':
                 if diff > 0.8:
-                    # self.set_speeds(-TURN_SPEED, TURN_SPEED)
                     return "turn_left"
                 elif 0.3 < diff < 0.8:
-                    # self.set_speeds(-SLOW_TURN_SPEED, SLOW_TURN_SPEED)
                     return "turn_left_slow"
                 else:
-                    # self.set_speeds(-MORE_SLOW_TURN_SPEED, MORE_SLOW_TURN_SPEED)
                     return "turn_left_more_slow"
         else:
             self._rotating = False
@@ -169,24 +157,15 @@ class Controller:
             self.rotation_done = True
             return "go"
 
-            # current_angle = self._sim_body.get_robot_orientation()
-            # diff = abs(abs(target_angle) - abs(current_angle))
-
     def turn_right(self):
         self.find_target_angle("right")
         self._rotation_sense = "right"
         return self.set_robot_orientation(self._target_angle, self._rotation_sense)
-        # go_straight()
-        # coord.move(30)
-        # time.sleep(1.9)
 
     def turn_left(self):
         self.find_target_angle("left")
         self._rotation_sense = "left"
         return self.set_robot_orientation(self._target_angle, self._rotation_sense)
-        # go_straight()
-        # coord.move(30)
-        # time.sleep(1.9)
 
     def turn_randomly(self):
         a = []
@@ -198,7 +177,7 @@ class Controller:
         print("DIREZIONE SCELTA", rand)
 
         if rand == "front":
-            self._rotating = False
+            self._rotating = False  # se non lo metto false dovrebbe superare incrocio tranquillamente
             return "go"
         elif rand == "right":
             return self.turn_right()
@@ -263,7 +242,6 @@ def on_message(client, userdata, msg):
             # print("Green", message_value)
         case "orientation":
             # print("Orientation", message_value)
-            # client.publish(f"controls/{perception_name}", message_value)
             controller._direction = float(message_value)
 
     # Controllo: se sta ruotando ritorna old state così non si crea coda ed esegue correttamente la rotaizone
@@ -289,10 +267,23 @@ if __name__ == "__main__":
                                  "go", "turn_left", "turn_right", "finish", "back"],
                              old_action="go"))
 
+    print("Old perception", controller._old_perception)
+    print("Free Directions", str(controller._free_directions))
+    print("Direction", str(controller._direction))
+    print("Rotating", str(controller._rotating))
+    print("Target Angle", str(controller._target_angle))
+    print("Rotation Sense", str(controller._rotation_sense))
+    print("Rotation Done", str(controller.rotation_done))
+    print("Waiting", str(controller.waiting_update_direction))
+    print("Update Direction", str(controller.update_direction))
+
     client_mqtt = mqtt.Client(
         mqtt.CallbackAPIVersion.VERSION2, reconnect_on_failure=True)
     client_mqtt.connect("mosquitto", 1883)
     client_mqtt.on_connect = on_connect
     client_mqtt.on_message = on_message
     client_mqtt.on_subscribe = on_subscribe
+
+    # client_mqtt.publish(f"controls/direction", "go")
+
     client_mqtt.loop_forever()
