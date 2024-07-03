@@ -66,16 +66,16 @@ class Controller:
                     print("ROTATION DONE")
                     return "go"
             else:
-                # if self._old_perception == "cross" and not self.waiting_update_direction:
-                if self._old_perception == "cross":
+                if self._old_perception == "cross" and not self.waiting_update_direction:
+                # if self._old_perception == "cross":
                     print("SCELTA DELLA DIREZIONE")
                     self._rotating = True
-                    # for el in self.update_direction.keys():
-                        # self.update_direction[el] = False
+                    for el in self.update_direction.keys():
+                        self.update_direction[el] = False
                     return self.turn_randomly()
-                # elif self._old_perception == "cross" and self.waiting_update_direction:
-                    # print("WAITING UPDATE", str(self.update_direction))
-                    # return "cross"
+                elif self._old_perception == "cross" and self.waiting_update_direction:
+                    print("WAITING UPDATE", str(self.update_direction))
+                    return "cross"
                 else:
                     if front:
                         if not left and not right:
@@ -87,7 +87,7 @@ class Controller:
                             client_mqtt.disconnect()
                             time.sleep(1.9)
                             client_mqtt.reconnect()
-                            # self.waiting_update_direction = True
+                            self.waiting_update_direction = True
                             return "cross"
                     else:
                         if left and right:
@@ -158,7 +158,6 @@ class Controller:
                     return "turn_left_more_slow"
         else:
             self._rotating = False
-            # return "rotation_done"
             self.rotation_done = True
             return "go"
 
@@ -191,7 +190,8 @@ class Controller:
         print("DIREZIONE SCELTA", rand)
 
         if rand == "front":
-            self._rotating = False  # se non lo metto false dovrebbe superare incrocio tranquillamente
+            self._rotating = False
+            # self.rotation_done = True  #usare per far andare dritto il robot
             return "go"
         elif rand == "right":
             return self.turn_right()
