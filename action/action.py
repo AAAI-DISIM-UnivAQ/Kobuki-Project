@@ -23,6 +23,7 @@ class Body:
         self._actuators = actuators
         self._sim_body = SimulatedPioneerBody("PioneerP3DX")
         self._sim_body.start()
+        # self._sim_body.reset_actuators()  # Aggiungi questa linea per resettare i motori
         self._go = False
         # self._orientation = 0.0
 

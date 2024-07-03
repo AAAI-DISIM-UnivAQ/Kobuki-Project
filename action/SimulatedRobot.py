@@ -41,3 +41,8 @@ class SimulatedPioneerBody:
     def get_robot_orientation(self):
         orientation = self._sim.getObjectOrientation(self._robot_handle, -1)
         return orientation[2]  # Restituisce l'angolo yaw
+
+    def reset_actuators(self):
+        for act_name in self._my_actuators_names:
+            self._sim.setJointTargetVelocity(self._my_actuators[act_name], 0.0)
+        print("Actuators reset to zero velocity")
