@@ -93,7 +93,7 @@ def on_message(client, userdata, msg):
         elif value == "turn_right_more_slow":
             my_robot.turn_right(MORE_SLOW_TURN_SPEED)
 
-    # client.publish("action", value, my_robot._go)
+    client.publish("action", value, my_robot._go)
 
 
 def on_subscribe(client, userdata, mid, reason_code_list, properties):
