@@ -66,10 +66,16 @@ class Controller:
                     print("ROTATION DONE")
                     return "go"
             else:
+                # if self._old_perception == "cross" and not self.waiting_update_direction:
                 if self._old_perception == "cross":
                     print("SCELTA DELLA DIREZIONE")
                     self._rotating = True
+                    # for el in self.update_direction.keys():
+                        # self.update_direction[el] = False
                     return self.turn_randomly()
+                # elif self._old_perception == "cross" and self.waiting_update_direction:
+                    # print("WAITING UPDATE", str(self.update_direction))
+                    # return "cross"
                 else:
                     if front:
                         if not left and not right:
@@ -81,26 +87,25 @@ class Controller:
                             client_mqtt.disconnect()
                             time.sleep(1.9)
                             client_mqtt.reconnect()
-                            # self._rotating = True
-                            # return self.turn_randomly()
+                            # self.waiting_update_direction = True
                             return "cross"
                     else:
                         if left and right:
                             # incrocio a T
                             print("INCROCIO A T")
-                            client_mqtt.disconnect()
-                            time.sleep(1.9)
-                            client_mqtt.reconnect()
-                            self._rotating = True
-                            return self.turn_randomly()
+                            # client_mqtt.disconnect()
+                            # time.sleep(1.9)
+                            # client_mqtt.reconnect()
+                            # self._rotating = True
+                            # return self.turn_randomly()
                         elif right:
                             # curva a destra
                             print("CURVA DX")
-                            return self.turn_right()
+                            # return self.turn_right()
                         elif left:
                             # curva a sinistra
                             print("CURVA SX")
-                            return self.turn_left()
+                            # return self.turn_left()
                         elif not left and not right:
                             # vicolo cieco
                             # return "back"
@@ -174,6 +179,15 @@ class Controller:
                 a.append(direction)
         print("DIREZIONI DISPONIBILI", a)
         rand = random.choice(a)
+        # if len(a) == 1 and a[0] == "front":
+            # print("MH")
+            # self._rotating = False
+            # return "go"
+
+        # if "front" in a:
+        # rand = "front"
+        # else:
+        # rand = random.choice(a)
         print("DIREZIONE SCELTA", rand)
 
         if rand == "front":
@@ -212,6 +226,8 @@ def update_direction(name, val):
         controller._free_directions[name] = True
     else:
         controller._free_directions[name] = False
+    if controller.waiting_update_direction:
+        controller.update_direction[name] = True
 
 
 def on_connect(client, userdata, flags, reason_code, properties):
@@ -230,18 +246,14 @@ def on_message(client, userdata, msg):
 
     match perception_name:
         case "front":
-            # print("Front", message_value)
             update_direction(perception_name, message_value)
         case "left":
-            # print("Left", message_value)
             update_direction(perception_name, message_value)
         case "right":
-            # print("Right", message_value)
             update_direction(perception_name, message_value)
         # case "green":
             # print("Green", message_value)
         case "orientation":
-            # print("Orientation", message_value)
             controller._direction = float(message_value)
 
     # Controllo: se sta ruotando ritorna old state così non si crea coda ed esegue correttamente la rotaizone
@@ -251,6 +263,11 @@ def on_message(client, userdata, msg):
     if control != controller._old_perception:
         client.publish(f"controls/direction", control)
         controller._old_perception = control
+    # if control == "front":
+        # print("PAUSA")
+        # client.disconnect()
+        # time.sleep(2.5)
+        # client.reconnect()
 
 
 def on_subscribe(client, userdata, mid, reason_code_list, properties):
@@ -267,15 +284,15 @@ if __name__ == "__main__":
                                  "go", "turn_left", "turn_right", "finish", "back"],
                              old_action="go"))
 
-    print("Old perception", controller._old_perception)
-    print("Free Directions", str(controller._free_directions))
-    print("Direction", str(controller._direction))
-    print("Rotating", str(controller._rotating))
-    print("Target Angle", str(controller._target_angle))
-    print("Rotation Sense", str(controller._rotation_sense))
-    print("Rotation Done", str(controller.rotation_done))
-    print("Waiting", str(controller.waiting_update_direction))
-    print("Update Direction", str(controller.update_direction))
+    # print("Old perception", controller._old_perception)
+    # print("Free Directions", str(controller._free_directions))
+    # print("Direction", str(controller._direction))
+    # print("Rotating", str(controller._rotating))
+    # print("Target Angle", str(controller._target_angle))
+    # print("Rotation Sense", str(controller._rotation_sense))
+    # print("Rotation Done", str(controller.rotation_done))
+    # print("Waiting", str(controller.waiting_update_direction))
+    # print("Update Direction", str(controller.update_direction))
 
     client_mqtt = mqtt.Client(
         mqtt.CallbackAPIVersion.VERSION2, reconnect_on_failure=True)
