@@ -198,6 +198,7 @@ class Controller:
         print("DIREZIONE SCELTA", rand)
 
         if rand == "front":
+            self._rotating = False
             return "go"
         elif rand == "right":
             return self.turn_right()

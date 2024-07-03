@@ -60,7 +60,7 @@ def on_connect(client, userdata, flags, reason_code, properties):
 def on_message(client, userdata, msg):
     name = msg.topic.split("/")[1]
     value = msg.payload.decode("utf-8")
-    # print(name, value)
+    print(name, value)
 
     if name == "direction":
         # if value == "go" and not my_robot._go:
