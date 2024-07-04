@@ -69,18 +69,18 @@ class SimulatedPioneerBody:
         orientation = self._sim.getObjectOrientation(self._robot_handle, -1)
         return orientation[2]  # Restituisce l'angolo yaw
 
+    def get_robot_position(self):
+        position = self._sim.getObjectPosition(self._robot_handle, -1)
+        return position  # Restituisce la posizione come [x, y, z]
+
     def sense(self):
-        # left_wheel_handle = self._sim.getObjectHandle("/PioneerP3DX/leftMotor")
-        # right_wheel_handle = self._sim.getObjectHandle("/PioneerP3DX/rightMotor")
-        # self._sim.setJointTargetVelocity(left_wheel_handle, 2.0)
-        # self._sim.setJointTargetVelocity(right_wheel_handle, 2.0)
         try:
             vision_values = self._read_vision_sensors(2)  # only vision sensors
             front_values = self._read_proximity_sensors(
                 0)  # only front sensors
-            # print("LEN", len(front_values))
             orientation = self.get_robot_orientation()
-            return vision_values, front_values, orientation
+            position = self.get_robot_position()
+            return vision_values, front_values, orientation, position
         except Exception as e:
             print(e)
 

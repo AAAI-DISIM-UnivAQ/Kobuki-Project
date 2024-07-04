@@ -2,6 +2,7 @@ import paho.mqtt.client as mqtt
 import math
 import time
 import random
+from Crossroad import Crossroad
 
 MAX_CORRECTION = 50
 ANGLE_TOLERANCE = 0.02
@@ -23,7 +24,6 @@ class Controller:
         assert isinstance(name, str) and isinstance(possible_perceptions, list)
         self._my_name = name
         self._my_possible_perceptions = possible_perceptions
-        # self._my_abilities = abilities
         self._old_action = old_action
         self._old_perception = ""
         self._free_directions = {
@@ -40,7 +40,14 @@ class Controller:
         self.update_direction = {
             "front": False,
             "left": False,
-            "right": False
+            "right": False,
+            "x": False,
+            "y": False
+        }
+        self.crossroads = []
+        self.position = {
+            "x": 0.0,
+            "y": 0.0
         }
 
     def control_directions(self):
@@ -49,12 +56,19 @@ class Controller:
         left = self._free_directions["left"]
         right = self._free_directions["right"]
 
-        print("Rotating", self._rotating)
-
+        # print("Rotating", self._rotating)
+        # print("POSIZIONE", str(controller.position))
         # print("Rotazione", self._rotating)
-        print("Front:", str(front), "Left:", str(left), "Right:", str(right))
+        # print("Front:", str(front), "Left:", str(left), "Right:", str(right))
+        print("Incroci incontrati", len(self.crossroads))
+        if len(self.crossroads) > 0:
+            i = 1
+            for crossroad in self.crossroads:
+                print(f"Incrocio {i}: {crossroad.x} - {crossroad.y}")
+                i += 1
 
-        if self.update_direction["front"] and self.update_direction["left"] and self.update_direction["right"]:
+        if self.update_direction["front"] and self.update_direction["left"] and self.update_direction["right"] \
+                and self.update_direction["x"] and self.update_direction["y"]:
             self.waiting_update_direction = False
 
         if not self._rotating:
@@ -67,7 +81,8 @@ class Controller:
                     return "go"
             else:
                 if self._old_perception == "cross" and not self.waiting_update_direction:
-                # if self._old_perception == "cross":
+                    # if self._old_perception == "cross":
+                    self.crossroads.append(Crossroad(controller.position["x"], controller.position["y"]))
                     print("SCELTA DELLA DIREZIONE")
                     self._rotating = True
                     for el in self.update_direction.keys():
@@ -88,6 +103,7 @@ class Controller:
                             time.sleep(1.9)
                             client_mqtt.reconnect()
                             self.waiting_update_direction = True
+                            # self.crossroads.append(Crossroad(controller.position["x"], controller.position["y"]))
                             return "cross"
                     else:
                         if left and right:
@@ -179,9 +195,9 @@ class Controller:
         print("DIREZIONI DISPONIBILI", a)
         rand = random.choice(a)
         # if len(a) == 1 and a[0] == "front":
-            # print("MH")
-            # self._rotating = False
-            # return "go"
+        # print("MH")
+        # self._rotating = False
+        # return "go"
 
         # if "front" in a:
         # rand = "front"
@@ -230,6 +246,19 @@ def update_direction(name, val):
         controller.update_direction[name] = True
 
 
+def update_position(name, val):
+    controller.position[name] = float(val)
+    if controller.waiting_update_direction:
+        controller.update_direction[name] = True
+
+
+def is_far_enough(x, y, crossroads, threshold=0.4):
+    for cross in crossroads:
+        if abs(cross.x - x) <= threshold and abs(cross.y - y) <= threshold:
+            return False
+    return True
+
+
 def on_connect(client, userdata, flags, reason_code, properties):
     if reason_code.is_failure:
         print(
@@ -242,8 +271,6 @@ def on_message(client, userdata, msg):
     perception_name = msg.topic.split("/")[1]
     message_value = msg.payload.decode("utf-8")
 
-    # print("name:", perception_name)
-
     match perception_name:
         case "front":
             update_direction(perception_name, message_value)
@@ -252,9 +279,13 @@ def on_message(client, userdata, msg):
         case "right":
             update_direction(perception_name, message_value)
         # case "green":
-            # print("Green", message_value)
+        # print("Green", message_value)
         case "orientation":
             controller._direction = float(message_value)
+        case "position_x":
+            update_position("x", message_value)
+        case "position_y":
+            update_position("y", message_value)
 
     # Controllo: se sta ruotando ritorna old state così non si crea coda ed esegue correttamente la rotaizone
 
@@ -263,11 +294,6 @@ def on_message(client, userdata, msg):
     if control != controller._old_perception:
         client.publish(f"controls/direction", control)
         controller._old_perception = control
-    # if control == "front":
-        # print("PAUSA")
-        # client.disconnect()
-        # time.sleep(2.5)
-        # client.reconnect()
 
 
 def on_subscribe(client, userdata, mid, reason_code_list, properties):
@@ -284,23 +310,10 @@ if __name__ == "__main__":
                                  "go", "turn_left", "turn_right", "finish", "back"],
                              old_action="go"))
 
-    # print("Old perception", controller._old_perception)
-    # print("Free Directions", str(controller._free_directions))
-    # print("Direction", str(controller._direction))
-    # print("Rotating", str(controller._rotating))
-    # print("Target Angle", str(controller._target_angle))
-    # print("Rotation Sense", str(controller._rotation_sense))
-    # print("Rotation Done", str(controller.rotation_done))
-    # print("Waiting", str(controller.waiting_update_direction))
-    # print("Update Direction", str(controller.update_direction))
-
     client_mqtt = mqtt.Client(
         mqtt.CallbackAPIVersion.VERSION2, reconnect_on_failure=True)
     client_mqtt.connect("mosquitto", 1883)
     client_mqtt.on_connect = on_connect
     client_mqtt.on_message = on_message
     client_mqtt.on_subscribe = on_subscribe
-
-    # client_mqtt.publish(f"controls/direction", "go")
-
     client_mqtt.loop_forever()

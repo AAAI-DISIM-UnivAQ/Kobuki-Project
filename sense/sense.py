@@ -18,9 +18,7 @@ class Body:
         self._sim_body.start()
 
     def sense(self, client):
-        # print("Keys in _d_sensors:", self._d_sensors.keys())
-        vision_values, proximity_values, orientation_value = self._sim_body.sense()
-        # proximity_counter = 0
+        vision_values, proximity_values, orientation_value, position_values = self._sim_body.sense()
         for s in self._d_sensors:
             if 'Vision_sensor' in s:
                 self._d_sensors[s] = vision_values[0]
@@ -36,6 +34,9 @@ class Body:
             print(f"Published data from sensor: {name}")
         client.publish(f"sense/orientation", str(orientation_value))
         print(f"Published orientation data")
+        client.publish(f"sense/position/x", str(position_values[0]))
+        client.publish(f"sense/position/y", str(position_values[1]))
+        print(f"Published position data")
 
 
 if __name__ == "__main__":

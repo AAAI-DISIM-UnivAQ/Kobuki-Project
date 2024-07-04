@@ -78,6 +78,12 @@ class Perceptor:
             elif key == "orientation":
                 print("Orientation", str(value))
                 self._perception["orientation"] = value
+            elif key == "position-x":
+                print("Position x", str(value))
+                self._perception["position_x"] = value
+            elif key == "position-y":
+                print("Position y", str(value))
+                self._perception["position_y"] = value
 
 
 def on_connect(client, userdata, flags, reason_code, properties):
@@ -92,10 +98,13 @@ def on_connect(client, userdata, flags, reason_code, properties):
 
 
 def on_message(client, userdata, msg):
-    sensor_name = msg.topic.split("/")[1]
+    sensor_name = msg.topic.split("/")
     message_value = msg.payload.decode("utf-8")
     print("Received")
-    perceptor._sensor_values[sensor_name] = message_value
+    if sensor_name[1] == "position":
+        perceptor._sensor_values[f"position-{sensor_name[2]}"] = message_value
+    else:
+        perceptor._sensor_values[sensor_name[1]] = message_value
 
     perceptor.percept(perceptor._sensor_values)
 
