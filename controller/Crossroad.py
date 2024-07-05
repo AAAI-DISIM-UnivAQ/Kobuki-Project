@@ -10,8 +10,8 @@ class Crossroad:
         self.y = y
         self.directions = []
 
-    def initialize_directions(self, front, left, right):
-        actual_dir = self.define_direction()
+    def initialize_directions(self, front, left, right, orientation):
+        actual_dir = self.define_direction(orientation)
         if actual_dir == "nord":
             self.directions.append(["sud", False])
             if front:
