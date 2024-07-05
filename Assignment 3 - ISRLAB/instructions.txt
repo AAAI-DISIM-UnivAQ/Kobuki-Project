@@ -1,6 +1,0 @@
-Redo the previous homework using a message broker to exchange data between modules
-(MQTT or Redis, your choice), also adapting the docker-compose.yml file to the different
-networking environment.
-
-sense --> publisher.
-perception --> subscriber.

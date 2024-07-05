@@ -10,7 +10,6 @@ ANGLE_TOLERANCE = 0.02
 
 class Controller:
     _my_possible_perceptions: list
-    # _my_abilities: list
     _my_name: str
     _old_action: str
     _old_perception: str
@@ -19,6 +18,7 @@ class Controller:
     _rotating: bool
     _target_angle: float
     _rotation_sense: str
+    _target: bool
 
     def __init__(self, name, possible_perceptions, old_action):
         assert isinstance(name, str) and isinstance(possible_perceptions, list)
@@ -49,6 +49,8 @@ class Controller:
             "x": 0.0,
             "y": 0.0
         }
+        self.dx_sx = False
+        self._target = False
 
     def control_directions(self):
         global client_mqtt
@@ -158,21 +160,24 @@ class Controller:
                         else:
                             return "undetermined"  # Opzionale, per gestire altri casi se necessario
         else:
-            return self.set_robot_orientation(self._target_angle, self._rotation_sense)
+            return self.set_robot_orientation(self._target_angle, self._rotation_sense, self.dx_sx)
 
-    def go_back(self):  # CONTROLLARE CALCOLO DEGLI ANGOLI NELLE DIREZIONI DX SX
+    def go_back(self):
         actual_angle = self._direction
         current_angle = self.normalize_angle(actual_angle)
+        self.dx_sx = False
         if -0.3 < current_angle < 0.3:
             self._target_angle = math.pi
         elif -1.8 < current_angle < -1.2:
             self._target_angle = math.pi / 2
+            self.dx_sx = True
         elif current_angle < -2.8 or current_angle > 2.8:
             self._target_angle = 0
         elif 1.2 < current_angle < 1.8:
             self._target_angle = - math.pi / 2
+            self.dx_sx = True
         self._rotation_sense = "front"
-        return self.set_robot_orientation(self._target_angle, self._rotation_sense)
+        return self.set_robot_orientation(self._target_angle, self._rotation_sense, self.dx_sx)
 
     def normalize_angle(self, angle):
         normalized_angle = angle % (2 * math.pi)
@@ -180,10 +185,14 @@ class Controller:
             normalized_angle -= 2 * math.pi
         return normalized_angle
 
-    def set_robot_orientation(self, target_angle, dir):
+    def set_robot_orientation(self, target_angle, dir, dx_sx):
         actual_angle = self._direction
         current_angle = self.normalize_angle(actual_angle)
-        diff = abs(abs(target_angle) - abs(current_angle))
+        # diff = abs(abs(target_angle) - abs(current_angle))
+        if dir == "front" and dx_sx:
+            diff = abs(target_angle - current_angle)
+        else:
+            diff = abs(abs(target_angle) - abs(current_angle))
         if diff > ANGLE_TOLERANCE:
             if dir == 'right' or dir == 'front':
                 if diff > 0.8:
@@ -202,17 +211,18 @@ class Controller:
         else:
             self._rotating = False
             self.rotation_done = True
+            self.dx_sx = False
             return "go"
 
     def turn_right(self):
         self.find_target_angle("right")
         self._rotation_sense = "right"
-        return self.set_robot_orientation(self._target_angle, self._rotation_sense)
+        return self.set_robot_orientation(self._target_angle, self._rotation_sense, self.dx_sx)
 
     def turn_left(self):
         self.find_target_angle("left")
         self._rotation_sense = "left"
-        return self.set_robot_orientation(self._target_angle, self._rotation_sense)
+        return self.set_robot_orientation(self._target_angle, self._rotation_sense, self.dx_sx)
 
     def turn_randomly(self, cross, actual_dir):
         # a = []
@@ -301,6 +311,12 @@ def update_position(name, val):
     if controller.waiting_update_direction:
         controller.update_direction[name] = True
 
+def update_target(val):
+    if val == "True":
+        controller._target = True
+    else:
+        controller._target = False
+    print("Target:", controller._target)
 
 def on_connect(client, userdata, flags, reason_code, properties):
     if reason_code.is_failure:
@@ -321,8 +337,8 @@ def on_message(client, userdata, msg):
             update_direction(perception_name, message_value)
         case "right":
             update_direction(perception_name, message_value)
-        # case "green":
-        # print("Green", message_value)
+        case "green":
+            update_target(message_value)
         case "orientation":
             controller._direction = float(message_value)
         case "position_x":
@@ -332,12 +348,16 @@ def on_message(client, userdata, msg):
 
     # Controllo: se sta ruotando ritorna old state così non si crea coda ed esegue correttamente la rotaizone
 
-    control = controller.control_directions()
-    # print("control:", control)
-    if control != controller._old_perception:
-        client.publish(f"controls/direction", control)
-        print("control:", control)
-        controller._old_perception = control
+    if not (controller._rotating or controller.rotation_done) and controller._target:
+        client.publish("controls/target", "Finish")
+        print("FINEEEEEEEEEEEEEE")
+    else:
+        control = controller.control_directions()
+        # print("control:", control)
+        if control != controller._old_perception:
+            client.publish(f"controls/direction", control)
+            print("control:", control)
+            controller._old_perception = control
 
 
 def on_subscribe(client, userdata, mid, reason_code_list, properties):

@@ -93,8 +93,12 @@ def on_message(client, userdata, msg):
             my_robot.turn_right(SLOW_TURN_SPEED)
         elif value == "turn_right_more_slow":
             my_robot.turn_right(MORE_SLOW_TURN_SPEED)
+    elif name == "target":
+        if value == "Finish":
+            my_robot.set_speeds(0, 0)
+            client.publish("action", "finish")
 
-    client.publish("action", value, my_robot._go)
+    # client.publish("action", value)
 
 
 def on_subscribe(client, userdata, mid, reason_code_list, properties):
