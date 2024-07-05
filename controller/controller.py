@@ -60,12 +60,14 @@ class Controller:
         # print("POSIZIONE", str(controller.position))
         # print("Rotazione", self._rotating)
         # print("Front:", str(front), "Left:", str(left), "Right:", str(right))
+        """
         print("Incroci incontrati", len(self.crossroads))
         if len(self.crossroads) > 0:
             i = 1
             for crossroad in self.crossroads:
                 print(f"Incrocio {i}: {crossroad.x} - {crossroad.y}")
                 i += 1
+        """
 
         if self.update_direction["front"] and self.update_direction["left"] and self.update_direction["right"] \
                 and self.update_direction["x"] and self.update_direction["y"]:
@@ -81,15 +83,20 @@ class Controller:
                     return "go"
             else:
                 if self._old_perception == "cross" and not self.waiting_update_direction:
-                    # if self._old_perception == "cross":
-                    self.crossroads.append(Crossroad(controller.position["x"], controller.position["y"]))
+                    if self.is_far_enough(controller.position["x"], controller.position["y"], controller.crossroads):
+                        print("Nuovo Incrocio !!!")
+                        self.crossroads.append(Crossroad(controller.position["x"], controller.position["y"]))
+                    else:
+                        print("Incrocio già incontrato !!!")
+                    actual_cross = self.find_cross(self.crossroads, self.position)
+                    print("Incrocio Considerato:", actual_cross.x, actual_cross.y)
                     print("SCELTA DELLA DIREZIONE")
                     self._rotating = True
                     for el in self.update_direction.keys():
                         self.update_direction[el] = False
                     return self.turn_randomly()
                 elif self._old_perception == "cross" and self.waiting_update_direction:
-                    print("WAITING UPDATE", str(self.update_direction))
+                    # print("WAITING UPDATE", str(self.update_direction))
                     return "cross"
                 else:
                     if front:
@@ -236,6 +243,18 @@ class Controller:
             elif 1.2 < current_angle < 1.8:
                 self._target_angle = - math.pi
 
+    def is_far_enough(self, x, y, crossroads, threshold=0.4):
+        for cross in crossroads:
+            if abs(cross.x - x) <= threshold and abs(cross.y - y) <= threshold:
+                return False
+        return True
+
+    def find_cross(self, crossroads_list, coord, threshold=0.4):
+        for cross in crossroads_list:
+            if abs(cross.x - coord["x"]) <= threshold and abs(cross.y - coord["y"]) <= threshold:
+                return cross
+        return None
+
 
 def update_direction(name, val):
     if val == "True":
@@ -250,13 +269,6 @@ def update_position(name, val):
     controller.position[name] = float(val)
     if controller.waiting_update_direction:
         controller.update_direction[name] = True
-
-
-def is_far_enough(x, y, crossroads, threshold=0.4):
-    for cross in crossroads:
-        if abs(cross.x - x) <= threshold and abs(cross.y - y) <= threshold:
-            return False
-    return True
 
 
 def on_connect(client, userdata, flags, reason_code, properties):
@@ -290,9 +302,10 @@ def on_message(client, userdata, msg):
     # Controllo: se sta ruotando ritorna old state così non si crea coda ed esegue correttamente la rotaizone
 
     control = controller.control_directions()
-    print("control:", control)
+    # print("control:", control)
     if control != controller._old_perception:
         client.publish(f"controls/direction", control)
+        print("control:", control)
         controller._old_perception = control
 
 
