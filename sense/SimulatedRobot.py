@@ -67,11 +67,11 @@ class SimulatedPioneerBody:
 
     def get_robot_orientation(self):
         orientation = self._sim.getObjectOrientation(self._robot_handle, -1)
-        return orientation[2]  # Restituisce l'angolo yaw
+        return orientation[2]  # Returns the yaw angle
 
     def get_robot_position(self):
         position = self._sim.getObjectPosition(self._robot_handle, -1)
-        return position  # Restituisce la posizione come [x, y, z]
+        return position  # Returns the position as [x, y, z]
 
     def sense(self):
         try:

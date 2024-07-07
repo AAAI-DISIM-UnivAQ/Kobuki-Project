@@ -27,8 +27,6 @@ class Body:
                 if match:
                     index = int(match.group())
                     self._d_sensors[s] = proximity_values[index]
-                # self._d_sensors[s] = proximity_values[proximity_counter]
-                # proximity_counter += 1
         for name in self._sensor_array:
             client.publish(f"sense/{name}", str(self._d_sensors[name]))
             print(f"Published data from sensor: {name}")
