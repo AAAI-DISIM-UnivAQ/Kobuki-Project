@@ -9,47 +9,44 @@ ANGLE_TOLERANCE = 0.02
 
 
 class Controller:
-    _my_possible_perceptions: list
-    _my_name: str
     _old_action: str
-    _old_perception: str
     _free_directions: dict
     _direction: float
     _rotating: bool
     _target_angle: float
     _rotation_sense: str
     _target: bool
+    _rotation_done: bool
+    _waiting_update_direction: bool
+    _update_direction: dict
+    _crossroads: list
+    _position: dict
+    _dx_sx: bool
+    _target: bool
 
-    def __init__(self, name, possible_perceptions, old_action):
-        assert isinstance(name, str) and isinstance(possible_perceptions, list)
-        self._my_name = name
-        self._my_possible_perceptions = possible_perceptions
-        self._old_action = old_action
-        self._old_perception = ""
+    def __init__(self):
+        self._old_action = ""
         self._free_directions = {
             "front": True,
             "left": False,
-            "right": False
-        }
+            "right": False}
         self._direction = 0.0
         self._rotating = False
         self._target_angle = 0.0
         self._rotation_sense = ""
-        self.rotation_done = False
-        self.waiting_update_direction = False
-        self.update_direction = {
+        self._rotation_done = False
+        self._waiting_update_direction = False
+        self._update_direction = {
             "front": False,
             "left": False,
             "right": False,
             "x": False,
-            "y": False
-        }
-        self.crossroads = []
-        self.position = {
+            "y": False}
+        self._crossroads = []
+        self._position = {
             "x": 0.0,
-            "y": 0.0
-        }
-        self.dx_sx = False
+            "y": 0.0}
+        self._dx_sx = False
         self._target = False
 
     def control_directions(self):
@@ -58,126 +55,91 @@ class Controller:
         left = self._free_directions["left"]
         right = self._free_directions["right"]
 
-        # print("Rotating", self._rotating)
-        # print("POSIZIONE", str(controller.position))
-        # print("Rotazione", self._rotating)
-        # print("Front:", str(front), "Left:", str(left), "Right:", str(right))
-        """
-        print("Incroci incontrati", len(self.crossroads))
-        if len(self.crossroads) > 0:
-            i = 1
-            for crossroad in self.crossroads:
-                print(f"Incrocio {i}: {crossroad.x} - {crossroad.y}")
-                i += 1
-        """
-
-        if self.update_direction["front"] and self.update_direction["left"] and self.update_direction["right"] \
-                and self.update_direction["x"] and self.update_direction["y"]:
-            self.waiting_update_direction = False
+        if self._update_direction["front"] and self._update_direction["left"] and self._update_direction["right"] \
+                and self._update_direction["x"] and self._update_direction["y"]:
+            self._waiting_update_direction = False
 
         if not self._rotating:
-            if self.rotation_done:
+            if self._rotation_done:
                 if front and not left and not right:
-                    print("FINISH ROTATION DONE")
-                    self.rotation_done = False
+                    print("Finish Rotation")
+                    self._rotation_done = False
                 else:
-                    print("ROTATION DONE")
+                    print("Rotation done, exit from turn/crossroad")
                     return "go"
             else:
-                if self._old_perception == "cross" and not self.waiting_update_direction:
+                if self._old_action == "cross" and not self._waiting_update_direction:
                     if (front + left + right) >= 2:
-                        if self.is_far_enough(controller.position["x"], controller.position["y"], controller.crossroads):
-                            print("Nuovo Incrocio !!!")
-                            self.crossroads.append(Crossroad(controller.position["x"], controller.position["y"]))
+                        if self.is_far_enough(self._position["x"], self._position["y"],
+                                              self._crossroads):
+                            print("New Cross!")
+                            self._crossroads.append(Crossroad(self._position["x"], self._position["y"]))
                         else:
-                            print("Incrocio già incontrato !!!")
+                            print("Crossroads already met!")
 
-                        actual_cross = self.find_cross(self.crossroads, self.position)
-                        print("Incrocio Considerato:", actual_cross.x, actual_cross.y)
+                        actual_cross = self.find_cross(self._crossroads, self._position)
                         actual_dir = actual_cross.define_direction(controller._direction)
                         if len(actual_cross.directions) == 0:
                             print("Init directions")
                             actual_cross.initialize_directions(front, left, right, self._direction)
                         else:
                             actual_cross.reverse_direction_status(actual_dir)
-                        print("Directions:", str(actual_cross.directions))
+                        print("Directions status:", str(actual_cross.directions))
 
-                        print("SCELTA DELLA DIREZIONE")
+                        print("Selection the direction")
                         self._rotating = True
-                        for el in self.update_direction.keys():
-                            self.update_direction[el] = False
+                        for el in self._update_direction.keys():
+                            self._update_direction[el] = False
                         return self.turn_randomly(actual_cross, actual_dir)
                     else:
-                        print("CURVA")
+                        print("Turn")
                         self._rotating = True
-                        for el in self.update_direction.keys():
-                            self.update_direction[el] = False
+                        for el in self._update_direction.keys():
+                            self._update_direction[el] = False
                         if left:
                             return self.turn_left()
                         elif right:
                             return self.turn_right()
 
-                elif self._old_perception == "cross" and self.waiting_update_direction:
-                    # print("WAITING UPDATE", str(self.update_direction))
+                elif self._old_action == "cross" and self._waiting_update_direction:
                     return "cross"
                 else:
                     if front:
                         if not left and not right:
-                            # strada dritta
                             return "go"
                         else:
-                            # incrocio a 4
-                            print("INCROCIO INCONTRATO")
+                            print("Crossroad or turn met")
                             client_mqtt.disconnect()
                             time.sleep(1.9)
                             client_mqtt.reconnect()
-                            self.waiting_update_direction = True
+                            self._waiting_update_direction = True
                             return "cross"
                     else:
-                        """
-                        if left and right:
-                            # incrocio a T
-                            print("INCROCIO A T")
-                            # client_mqtt.disconnect()
-                            # time.sleep(1.9)
-                            # client_mqtt.reconnect()
-                            # self._rotating = True
-                            # return self.turn_randomly()
-                        elif right:
-                            # curva a destra
-                            print("CURVA DX")
-                            # return self.turn_right()
-                        elif left:
-                            # curva a sinistra
-                            print("CURVA SX")
-                            # return self.turn_left()
-                        """
                         if not left and not right:
-                            # vicolo cieco
-                            print("VICOLO CIECO")
+                            print("Blind path")
                             self._rotating = True
                             return self.go_back()
                         else:
-                            return "undetermined"  # Opzionale, per gestire altri casi se necessario
+                            return "undetermined"
         else:
-            return self.set_robot_orientation(self._target_angle, self._rotation_sense, self.dx_sx)
+            return self.set_robot_orientation(self._target_angle, self._rotation_sense, self._dx_sx)
 
     def go_back(self):
         actual_angle = self._direction
         current_angle = self.normalize_angle(actual_angle)
-        self.dx_sx = False
+        self._dx_sx = False
         if -0.3 < current_angle < 0.3:
             self._target_angle = math.pi
         elif -1.8 < current_angle < -1.2:
             self._target_angle = math.pi / 2
-            self.dx_sx = True
+            self._dx_sx = True
         elif current_angle < -2.8 or current_angle > 2.8:
             self._target_angle = 0
         elif 1.2 < current_angle < 1.8:
             self._target_angle = - math.pi / 2
-            self.dx_sx = True
+            self._dx_sx = True
         self._rotation_sense = "front"
-        return self.set_robot_orientation(self._target_angle, self._rotation_sense, self.dx_sx)
+        return self.set_robot_orientation(self._target_angle, self._rotation_sense, self._dx_sx)
 
     def normalize_angle(self, angle):
         normalized_angle = angle % (2 * math.pi)
@@ -188,7 +150,6 @@ class Controller:
     def set_robot_orientation(self, target_angle, dir, dx_sx):
         actual_angle = self._direction
         current_angle = self.normalize_angle(actual_angle)
-        # diff = abs(abs(target_angle) - abs(current_angle))
         if dir == "front" and dx_sx:
             diff = abs(target_angle - current_angle)
         else:
@@ -210,37 +171,31 @@ class Controller:
                     return "turn_left_more_slow"
         else:
             self._rotating = False
-            self.rotation_done = True
-            self.dx_sx = False
+            self._rotation_done = True
+            self._dx_sx = False
             return "go"
 
     def turn_right(self):
         self.find_target_angle("right")
         self._rotation_sense = "right"
-        return self.set_robot_orientation(self._target_angle, self._rotation_sense, self.dx_sx)
+        return self.set_robot_orientation(self._target_angle, self._rotation_sense, self._dx_sx)
 
     def turn_left(self):
         self.find_target_angle("left")
         self._rotation_sense = "left"
-        return self.set_robot_orientation(self._target_angle, self._rotation_sense, self.dx_sx)
+        return self.set_robot_orientation(self._target_angle, self._rotation_sense, self._dx_sx)
 
     def turn_randomly(self, cross, actual_dir):
-        # a = []
-        # for direction, is_free in self._free_directions.items():
-            # if is_free:
-                # a.append(direction)
-        # print("DIREZIONI DISPONIBILI", a)
-        # rand = random.choice(a)
         options = cross.get_true_directions()
-        print("Available: ", str(options))
+        print("Available directions: ", str(options))
         choice = random.choice(options)
-        print("DIREZIONE SCELTA", choice)
+        print("Direction selected", choice)
         cross.set_direction_status(choice)
-        print("Direction status: " + str(cross.directions))
+        print("New directions status: " + str(cross.directions))
 
         if choice == actual_dir:
             self._rotating = False
-            self.rotation_done = True  # usare per far andare dritto il robot
+            self._rotation_done = True  # usare per far andare dritto il robot
             return "go"
         elif ((actual_dir == "nord" and choice == "est") or
               (actual_dir == "sud" and choice == "ovest") or
@@ -252,15 +207,6 @@ class Controller:
               (actual_dir == "est" and choice == "nord") or
               (actual_dir == "ovest" and choice == "sud")):
             return self.turn_left()
-
-        # if rand == "front":
-            # self._rotating = False
-            # self.rotation_done = True  # usare per far andare dritto il robot
-            # return "go"
-        # elif rand == "right":
-            # return self.turn_right()
-        # elif rand == "left":
-            # return self.turn_left()
 
     def find_target_angle(self, direction):
         actual_angle = self._direction
@@ -296,27 +242,41 @@ class Controller:
                 return cross
         return None
 
+    def update_direction_function(self, name, val):
+        if val == "True":
+            self._free_directions[name] = True
+        else:
+            self._free_directions[name] = False
+        if self._waiting_update_direction:
+            self._update_direction[name] = True
 
-def update_direction(name, val):
-    if val == "True":
-        controller._free_directions[name] = True
-    else:
-        controller._free_directions[name] = False
-    if controller.waiting_update_direction:
-        controller.update_direction[name] = True
+    def update_position(self, name, val):
+        self._position[name] = float(val)
+        if self._waiting_update_direction:
+            self._update_direction[name] = True
 
+    def update_target(self, val):
+        if val == "True":
+            self._target = True
+        else:
+            self._target = False
 
-def update_position(name, val):
-    controller.position[name] = float(val)
-    if controller.waiting_update_direction:
-        controller.update_direction[name] = True
+    @property
+    def target(self):
+        return self._target
 
-def update_target(val):
-    if val == "True":
-        controller._target = True
-    else:
-        controller._target = False
-    print("Target:", controller._target)
+    @property
+    def rotating(self):
+        return self._rotating
+
+    @property
+    def rotation_done(self):
+        return self._rotation_done
+
+    @property
+    def old_action(self):
+        return self._old_action
+
 
 def on_connect(client, userdata, flags, reason_code, properties):
     if reason_code.is_failure:
@@ -332,32 +292,29 @@ def on_message(client, userdata, msg):
 
     match perception_name:
         case "front":
-            update_direction(perception_name, message_value)
+            controller.update_direction_function(perception_name, message_value)
         case "left":
-            update_direction(perception_name, message_value)
+            controller.update_direction_function(perception_name, message_value)
         case "right":
-            update_direction(perception_name, message_value)
+            controller.update_direction_function(perception_name, message_value)
         case "green":
-            update_target(message_value)
+            controller.update_target(message_value)
         case "orientation":
             controller._direction = float(message_value)
         case "position_x":
-            update_position("x", message_value)
+            controller.update_position("x", message_value)
         case "position_y":
-            update_position("y", message_value)
+            controller.update_position("y", message_value)
 
-    # Controllo: se sta ruotando ritorna old state così non si crea coda ed esegue correttamente la rotaizone
-
-    if not (controller._rotating or controller.rotation_done) and controller._target:
+    if not (controller.rotating or controller.rotation_done) and controller.target:
         client.publish("controls/target", "Finish")
-        print("FINEEEEEEEEEEEEEE")
+        print("FINE")
     else:
         control = controller.control_directions()
-        # print("control:", control)
-        if control != controller._old_perception:
+        if control != controller.old_action:
             client.publish(f"controls/direction", control)
             print("control:", control)
-            controller._old_perception = control
+            controller._old_action = control
 
 
 def on_subscribe(client, userdata, mid, reason_code_list, properties):
@@ -368,11 +325,7 @@ def on_subscribe(client, userdata, mid, reason_code_list, properties):
 
 
 if __name__ == "__main__":
-    controller = (Controller("Brain",
-                             # sostituire cross con turn left, turn right
-                             possible_perceptions=[
-                                 "go", "turn_left", "turn_right", "finish", "back"],
-                             old_action="go"))
+    controller = (Controller())
 
     client_mqtt = mqtt.Client(
         mqtt.CallbackAPIVersion.VERSION2, reconnect_on_failure=True)

@@ -11,21 +11,13 @@ MORE_SLOW_TURN_SPEED = 0.1
 
 class Body:
     _actuators: list
-    # _motions: list
     _sim_body: SimulatedPioneerBody
-    _go: bool
-
-    # _orientation: float
 
     def __init__(self, actuators):
         assert isinstance(actuators, list)
-        # self._motions = motions
         self._actuators = actuators
         self._sim_body = SimulatedPioneerBody("PioneerP3DX")
         self._sim_body.start()
-        # self._sim_body.reset_actuators()  # Aggiungi questa linea per resettare i motori
-        self._go = False
-        # self._orientation = 0.0
 
     def exists_actuator(self, name):
         return name in self._actuators
@@ -41,7 +33,6 @@ class Body:
 
     def go_straight(self):
         self.set_speeds(BASE_SPEED, BASE_SPEED)
-        # self._go = True
 
     def turn_left(self, vel):
         self.set_speeds(-vel, vel)
@@ -64,19 +55,7 @@ def on_message(client, userdata, msg):
     print(name, value)
 
     if name == "direction":
-        # if value == "go" and not my_robot._go:
-        if value == "rotation_done":
-            client_mqtt.disconnect()
-            my_robot.go_straight()
-            time.sleep(2.5)
-            client_mqtt.reconnect()
-            # my_robot.set_speeds(BASE_SPEED, BASE_SPEED)
-            # my_robot._go = True
-            print("Velocità base")
-
-            # print("Velocità base")
-        # elif value == "cross" and my_robot._go:
-        elif value == "go":
+        if value == "go":
             my_robot.go_straight()
         elif value == "cross":
             print("Stop")
@@ -97,8 +76,6 @@ def on_message(client, userdata, msg):
         if value == "Finish":
             my_robot.set_speeds(0, 0)
             client.publish("action", "finish")
-
-    # client.publish("action", value)
 
 
 def on_subscribe(client, userdata, mid, reason_code_list, properties):

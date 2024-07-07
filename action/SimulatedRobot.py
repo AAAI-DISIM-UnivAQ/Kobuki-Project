@@ -9,7 +9,7 @@ class SimulatedPioneerBody:
     _cSim_client: Any
     _my_actuators: dict
     _my_actuators_names: List
-    _robot_handle: Any # per test
+    _robot_handle: Any
 
     def __init__(self, name: str):
         self._my_name = name
